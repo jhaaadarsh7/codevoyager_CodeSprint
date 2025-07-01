@@ -1,16 +1,32 @@
 /**
  * UserContext Utilities
- * Additional helper functions and utilities for user management
- * Created on: 2025-07-01 08:30:35 UTC
+ * Comprehensive helper functions and utilities for user management
+ * Created on: 2025-07-01 09:17:07 UTC
  * Author: aadityabinod
+ * 
+ * This file contains utility functions for:
+ * - Date and time operations
+ * - User validation
+ * - Role and permission management
+ * - KYC status handling
+ * - File operations
+ * - Financial calculations
+ * - Local storage management
+ * - Error handling
+ * - Device detection
+ * - Notifications
+ * - System information
  */
 
-// Date and time utilities
+// ============================================================================
+// DATE AND TIME UTILITIES
+// ============================================================================
+
 export const dateUtils = {
   /**
    * Format date to readable string
    * @param {string|Date} date - Date to format
-   * @param {string} format - Format type ('short', 'long', 'time', 'datetime', 'iso')
+   * @param {string} format - Format type ('short', 'long', 'time', 'datetime', 'iso', 'utc')
    * @returns {string} Formatted date string
    */
   formatDate: (date, format = 'short') => {
@@ -38,6 +54,14 @@ export const dateUtils = {
         return dateObj.toISOString().split('T')[0];
       case 'utc':
         return dateObj.toISOString().replace('T', ' ').split('.')[0];
+      case 'readable':
+        return dateObj.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
       default:
         return dateObj.toLocaleDateString();
     }
@@ -50,6 +74,14 @@ export const dateUtils = {
   getCurrentUTC: () => {
     const now = new Date();
     return now.toISOString().replace('T', ' ').split('.')[0];
+  },
+
+  /**
+   * Get current local date time
+   * @returns {string} Current local datetime
+   */
+  getCurrentLocal: () => {
+    return new Date().toLocaleString();
   },
 
   /**
@@ -67,11 +99,15 @@ export const dateUtils = {
     const diffMins = Math.floor(diffSecs / 60);
     const diffHours = Math.floor(diffMins / 60);
     const diffDays = Math.floor(diffHours / 24);
+    const diffWeeks = Math.floor(diffDays / 7);
+    const diffMonths = Math.floor(diffDays / 30);
 
     if (diffSecs < 60) return 'just now';
     if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
     if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-    if (diffDays < 30) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    if (diffWeeks < 4) return `${diffWeeks} week${diffWeeks > 1 ? 's' : ''} ago`;
+    if (diffMonths < 12) return `${diffMonths} month${diffMonths > 1 ? 's' : ''} ago`;
     
     return dateUtils.formatDate(date, 'short');
   },
@@ -97,10 +133,59 @@ export const dateUtils = {
     const expiryDate = new Date(date);
     const diffTime = expiryDate - now;
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  },
+
+  /**
+   * Check if date is within range
+   * @param {string|Date} date - Date to check
+   * @param {number} days - Number of days from now
+   * @returns {boolean} True if within range
+   */
+  isWithinDays: (date, days) => {
+    if (!date) return false;
+    const now = new Date();
+    const checkDate = new Date(date);
+    const diffTime = Math.abs(checkDate - now);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays <= days;
+  },
+
+  /**
+   * Add days to a date
+   * @param {string|Date} date - Base date
+   * @param {number} days - Days to add
+   * @returns {Date} New date
+   */
+  addDays: (date, days) => {
+    const result = new Date(date);
+    result.setDate(result.getDate() + days);
+    return result;
+  },
+
+  /**
+   * Get age from date of birth
+   * @param {string|Date} dateOfBirth - Date of birth
+   * @returns {number} Age in years
+   */
+  getAge: (dateOfBirth) => {
+    if (!dateOfBirth) return 0;
+    const today = new Date();
+    const birthDate = new Date(dateOfBirth);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    
+    return age;
   }
 };
 
-// User validation utilities
+// ============================================================================
+// VALIDATION UTILITIES
+// ============================================================================
+
 export const validationUtils = {
   /**
    * Validate email format
@@ -186,10 +271,77 @@ export const validationUtils = {
   isValidName: (name) => {
     const nameRegex = /^[a-zA-Z\s]{2,50}$/;
     return nameRegex.test(name);
+  },
+
+  /**
+   * Validate URL
+   * @param {string} url - URL to validate
+   * @returns {boolean} True if valid
+   */
+  isValidUrl: (url) => {
+    try {
+      new URL(url);
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
+  /**
+   * Validate credit card number (basic Luhn algorithm)
+   * @param {string} cardNumber - Card number to validate
+   * @returns {boolean} True if valid
+   */
+  isValidCreditCard: (cardNumber) => {
+    const cleanNumber = cardNumber.replace(/\s+/g, '');
+    if (!/^\d{13,19}$/.test(cleanNumber)) return false;
+
+    let sum = 0;
+    let isEven = false;
+    
+    for (let i = cleanNumber.length - 1; i >= 0; i--) {
+      let digit = parseInt(cleanNumber[i]);
+      
+      if (isEven) {
+        digit *= 2;
+        if (digit > 9) {
+          digit -= 9;
+        }
+      }
+      
+      sum += digit;
+      isEven = !isEven;
+    }
+    
+    return sum % 10 === 0;
+  },
+
+  /**
+   * Validate postal/ZIP code
+   * @param {string} postalCode - Postal code to validate
+   * @param {string} country - Country code (US, UK, CA, etc.)
+   * @returns {boolean} True if valid
+   */
+  isValidPostalCode: (postalCode, country = 'US') => {
+    const patterns = {
+      US: /^\d{5}(-\d{4})?$/,
+      UK: /^[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}$/i,
+      CA: /^[A-Z]\d[A-Z]\s?\d[A-Z]\d$/i,
+      AU: /^\d{4}$/,
+      DE: /^\d{5}$/,
+      FR: /^\d{5}$/,
+      NP: /^\d{5}$/
+    };
+    
+    const pattern = patterns[country.toUpperCase()];
+    return pattern ? pattern.test(postalCode) : true;
   }
 };
 
-// User role and permission utilities
+// ============================================================================
+// ROLE AND PERMISSION UTILITIES
+// ============================================================================
+
 export const roleUtils = {
   /**
    * Get role display name
@@ -201,7 +353,10 @@ export const roleUtils = {
       admin: 'Administrator',
       user: 'User',
       moderator: 'Moderator',
-      guest: 'Guest'
+      guest: 'Guest',
+      manager: 'Manager',
+      support: 'Support Agent',
+      developer: 'Developer'
     };
     return roleNames[role] || role;
   },
@@ -223,24 +378,51 @@ export const roleUtils = {
         'view_transactions',
         'manage_settings',
         'view_dashboard',
-        'manage_currency_rates'
+        'manage_currency_rates',
+        'access_admin_panel',
+        'manage_roles',
+        'view_analytics',
+        'export_data',
+        'manage_notifications'
+      ],
+      manager: [
+        'view_all_users',
+        'edit_users',
+        'view_kyc',
+        'approve_kyc',
+        'reject_kyc',
+        'view_transactions',
+        'view_dashboard',
+        'view_analytics',
+        'manage_notifications'
       ],
       moderator: [
         'view_kyc',
         'approve_kyc',
         'reject_kyc',
         'view_transactions',
-        'view_dashboard'
+        'view_dashboard',
+        'moderate_content'
+      ],
+      support: [
+        'view_users',
+        'view_kyc',
+        'view_transactions',
+        'view_dashboard',
+        'respond_tickets'
       ],
       user: [
         'view_profile',
         'edit_profile',
         'submit_kyc',
         'view_own_transactions',
-        'currency_exchange'
+        'currency_exchange',
+        'upload_documents',
+        'view_notifications'
       ],
       guest: [
-        'view_profile'
+        'view_profile',
+        'view_public_content'
       ]
     };
     return permissions[role] || [];
@@ -267,29 +449,60 @@ export const roleUtils = {
       admin: {
         color: 'bg-red-100 text-red-800',
         icon: '👑',
-        label: 'Admin'
+        label: 'Admin',
+        priority: 10
+      },
+      manager: {
+        color: 'bg-indigo-100 text-indigo-800',
+        icon: '💼',
+        label: 'Manager',
+        priority: 8
       },
       moderator: {
         color: 'bg-purple-100 text-purple-800',
         icon: '🛡️',
-        label: 'Moderator'
+        label: 'Moderator',
+        priority: 6
+      },
+      support: {
+        color: 'bg-cyan-100 text-cyan-800',
+        icon: '🎧',
+        label: 'Support',
+        priority: 4
       },
       user: {
         color: 'bg-blue-100 text-blue-800',
         icon: '👤',
-        label: 'User'
+        label: 'User',
+        priority: 2
       },
       guest: {
         color: 'bg-gray-100 text-gray-800',
         icon: '👥',
-        label: 'Guest'
+        label: 'Guest',
+        priority: 1
       }
     };
     return badges[role] || badges.guest;
+  },
+
+  /**
+   * Check if role is higher than another role
+   * @param {string} role1 - First role
+   * @param {string} role2 - Second role
+   * @returns {boolean} True if role1 is higher than role2
+   */
+  isRoleHigher: (role1, role2) => {
+    const badge1 = roleUtils.getRoleBadge(role1);
+    const badge2 = roleUtils.getRoleBadge(role2);
+    return badge1.priority > badge2.priority;
   }
 };
 
-// KYC status utilities
+// ============================================================================
+// KYC STATUS UTILITIES
+// ============================================================================
+
 export const kycUtils = {
   /**
    * Get KYC status display info
@@ -305,7 +518,8 @@ export const kycUtils = {
         textColor: 'text-yellow-800',
         borderColor: 'border-yellow-300',
         icon: '⏳',
-        description: 'Your KYC is under review'
+        description: 'Your KYC is under review',
+        priority: 3
       },
       approved: {
         label: 'Verified',
@@ -314,7 +528,8 @@ export const kycUtils = {
         textColor: 'text-green-800',
         borderColor: 'border-green-300',
         icon: '✅',
-        description: 'Your identity has been verified'
+        description: 'Your identity has been verified',
+        priority: 4
       },
       rejected: {
         label: 'Rejected',
@@ -323,7 +538,8 @@ export const kycUtils = {
         textColor: 'text-red-800',
         borderColor: 'border-red-300',
         icon: '❌',
-        description: 'Your KYC was rejected'
+        description: 'Your KYC was rejected',
+        priority: 2
       },
       draft: {
         label: 'Incomplete',
@@ -332,7 +548,28 @@ export const kycUtils = {
         textColor: 'text-gray-800',
         borderColor: 'border-gray-300',
         icon: '📝',
-        description: 'Please complete your KYC'
+        description: 'Please complete your KYC',
+        priority: 1
+      },
+      expired: {
+        label: 'Expired',
+        color: 'orange',
+        bgColor: 'bg-orange-100',
+        textColor: 'text-orange-800',
+        borderColor: 'border-orange-300',
+        icon: '🕐',
+        description: 'Your KYC has expired',
+        priority: 2
+      },
+      suspended: {
+        label: 'Suspended',
+        color: 'purple',
+        bgColor: 'bg-purple-100',
+        textColor: 'text-purple-800',
+        borderColor: 'border-purple-300',
+        icon: '🚫',
+        description: 'Your KYC is suspended',
+        priority: 1
       }
     };
     return statusInfo[status] || statusInfo.draft;
@@ -408,10 +645,85 @@ export const kycUtils = {
     return requiredFields.filter(field => 
       !kycData[field] || kycData[field] === ''
     );
+  },
+
+  /**
+   * Get KYC step progress
+   * @param {object} kycData - KYC data object
+   * @returns {object} Step progress info
+   */
+  getStepProgress: (kycData) => {
+    const steps = {
+      1: ['firstName', 'lastName', 'dateOfBirth', 'nationality'],
+      2: ['passportNumber', 'passportIssuePlace', 'passportIssueDate', 'passportExpiryDate'],
+      3: ['visaType', 'visaIssueDate', 'visaExpiryDate', 'expectedExitDate'],
+      4: ['sourceOfFunds', 'estimatedAmountToConvert', 'monthlyIncomeRange'],
+      5: ['passportPhotoPage', 'visaPage', 'selfie', 'proofOfAddress']
+    };
+
+    const progress = {};
+    
+    Object.keys(steps).forEach(step => {
+      const fields = steps[step];
+      const completedFields = fields.filter(field => 
+        kycData?.[field] && kycData[field] !== ''
+      );
+      progress[step] = {
+        completed: completedFields.length,
+        total: fields.length,
+        percentage: Math.round((completedFields.length / fields.length) * 100),
+        isComplete: completedFields.length === fields.length
+      };
+    });
+
+    return progress;
+  },
+
+  /**
+   * Validate KYC expiry
+   * @param {object} kycData - KYC data object
+   * @returns {object} Expiry validation result
+   */
+  validateExpiry: (kycData) => {
+    if (!kycData) return { hasExpiry: false };
+
+    const result = {
+      hasExpiry: false,
+      expired: [],
+      expiringSoon: [],
+      valid: []
+    };
+
+    const documents = [
+      { field: 'passportExpiryDate', name: 'Passport' },
+      { field: 'visaExpiryDate', name: 'Visa' }
+    ];
+
+    documents.forEach(doc => {
+      if (kycData[doc.field]) {
+        result.hasExpiry = true;
+        const expiryDate = new Date(kycData[doc.field]);
+        const now = new Date();
+        const daysUntilExpiry = dateUtils.getDaysUntilExpiry(kycData[doc.field]);
+
+        if (daysUntilExpiry < 0) {
+          result.expired.push({ ...doc, expiryDate, daysUntilExpiry });
+        } else if (daysUntilExpiry <= 30) {
+          result.expiringSoon.push({ ...doc, expiryDate, daysUntilExpiry });
+        } else {
+          result.valid.push({ ...doc, expiryDate, daysUntilExpiry });
+        }
+      }
+    });
+
+    return result;
   }
 };
 
-// File handling utilities
+// ============================================================================
+// FILE HANDLING UTILITIES
+// ============================================================================
+
 export const fileUtils = {
   /**
    * Format file size
@@ -421,7 +733,7 @@ export const fileUtils = {
   formatFileSize: (bytes) => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   },
@@ -489,10 +801,64 @@ export const fileUtils = {
 
     result.isValid = result.errors.length === 0;
     return result;
+  },
+
+  /**
+   * Convert file to base64
+   * @param {File} file - File to convert
+   * @returns {Promise<string>} Base64 string
+   */
+  fileToBase64: (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = error => reject(error);
+    });
+  },
+
+  /**
+   * Get file MIME type from base64
+   * @param {string} base64 - Base64 string
+   * @returns {string} MIME type
+   */
+  getMimeTypeFromBase64: (base64) => {
+    const match = base64.match(/data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+).*,.*/);
+    return match ? match[1] : '';
+  },
+
+  /**
+   * Compress image file
+   * @param {File} file - Image file to compress
+   * @param {number} quality - Compression quality (0-1)
+   * @param {number} maxWidth - Maximum width
+   * @returns {Promise<File>} Compressed file
+   */
+  compressImage: (file, quality = 0.8, maxWidth = 1024) => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+
+      img.onload = () => {
+        const ratio = Math.min(maxWidth / img.width, maxWidth / img.height);
+        canvas.width = img.width * ratio;
+        canvas.height = img.height * ratio;
+
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        
+        canvas.toBlob(resolve, file.type, quality);
+      };
+
+      img.src = URL.createObjectURL(file);
+    });
   }
 };
 
-// Currency and financial utilities
+// ============================================================================
+// FINANCIAL UTILITIES
+// ============================================================================
+
 export const financialUtils = {
   /**
    * Format currency amount
@@ -515,7 +881,10 @@ export const financialUtils = {
    */
   formatNumber: (number) => {
     if (isNaN(number)) return 'N/A';
-    return new Intl.NumberFormat('en-US').format(number);
+    return new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(number);
   },
 
   /**
@@ -543,7 +912,24 @@ export const financialUtils = {
       INR: '₹',
       CNY: '¥',
       AUD: 'A$',
-      CAD: 'C$'
+      CAD: 'C$',
+      CHF: 'Fr.',
+      SEK: 'kr',
+      NOK: 'kr',
+      DKK: 'kr',
+      PLN: 'zł',
+      CZK: 'Kč',
+      HUF: 'Ft',
+      RUB: '₽',
+      BRL: 'R$',
+      MXN: '$',
+      SGD: 'S$',
+      HKD: 'HK$',
+      NZD: 'NZ$',
+      ZAR: 'R',
+      TRY: '₺',
+      KRW: '₩',
+      THB: '฿'
     };
   },
 
@@ -557,10 +943,84 @@ export const financialUtils = {
     const symbols = financialUtils.getCurrencySymbols();
     const symbol = symbols[currency] || currency;
     return `${symbol}${financialUtils.formatNumber(amount)}`;
+  },
+
+  /**
+   * Calculate percentage change
+   * @param {number} oldValue - Old value
+   * @param {number} newValue - New value
+   * @returns {number} Percentage change
+   */
+  calculatePercentageChange: (oldValue, newValue) => {
+    if (oldValue === 0) return newValue === 0 ? 0 : 100;
+    return ((newValue - oldValue) / oldValue) * 100;
+  },
+
+  /**
+   * Calculate compound interest
+   * @param {number} principal - Principal amount
+   * @param {number} rate - Annual interest rate (as decimal)
+   * @param {number} time - Time in years
+   * @param {number} compound - Compound frequency per year
+   * @returns {number} Final amount
+   */
+  calculateCompoundInterest: (principal, rate, time, compound = 1) => {
+    return principal * Math.pow((1 + rate / compound), compound * time);
+  },
+
+  /**
+   * Format percentage
+   * @param {number} value - Value to format
+   * @param {number} decimals - Number of decimal places
+   * @returns {string} Formatted percentage
+   */
+  formatPercentage: (value, decimals = 2) => {
+    if (isNaN(value)) return 'N/A';
+    return `${value.toFixed(decimals)}%`;
+  },
+
+  /**
+   * Parse amount from string
+   * @param {string} amountStr - Amount string
+   * @returns {number} Parsed amount
+   */
+  parseAmount: (amountStr) => {
+    if (typeof amountStr === 'number') return amountStr;
+    const cleaned = amountStr.replace(/[^\d.-]/g, '');
+    return parseFloat(cleaned) || 0;
+  },
+
+  /**
+   * Get currency info
+   * @param {string} currency - Currency code
+   * @returns {object} Currency information
+   */
+  getCurrencyInfo: (currency) => {
+    const currencyData = {
+      USD: { name: 'US Dollar', symbol: '$', decimals: 2, country: 'United States' },
+      EUR: { name: 'Euro', symbol: '€', decimals: 2, country: 'European Union' },
+      GBP: { name: 'British Pound', symbol: '£', decimals: 2, country: 'United Kingdom' },
+      JPY: { name: 'Japanese Yen', symbol: '¥', decimals: 0, country: 'Japan' },
+      NPR: { name: 'Nepalese Rupee', symbol: 'Rs.', decimals: 2, country: 'Nepal' },
+      INR: { name: 'Indian Rupee', symbol: '₹', decimals: 2, country: 'India' },
+      CNY: { name: 'Chinese Yuan', symbol: '¥', decimals: 2, country: 'China' },
+      AUD: { name: 'Australian Dollar', symbol: 'A$', decimals: 2, country: 'Australia' },
+      CAD: { name: 'Canadian Dollar', symbol: 'C$', decimals: 2, country: 'Canada' }
+    };
+    
+    return currencyData[currency] || { 
+      name: currency, 
+      symbol: currency, 
+      decimals: 2, 
+      country: 'Unknown' 
+    };
   }
 };
 
-// Local storage utilities
+// ============================================================================
+// LOCAL STORAGE UTILITIES
+// ============================================================================
+
 export const storageUtils = {
   /**
    * Set item in localStorage with expiry
@@ -606,7 +1066,17 @@ export const storageUtils = {
    * Clear all app-related storage
    */
   clearAppStorage: () => {
-    const keysToRemove = ['token', 'user', 'rememberMe', 'kycData', 'preferences'];
+    const keysToRemove = [
+      'token', 
+      'user', 
+      'rememberMe', 
+      'kycData', 
+      'preferences',
+      'theme',
+      'language',
+      'lastLogin',
+      'sessionData'
+    ];
     keysToRemove.forEach(key => localStorage.removeItem(key));
   },
 
@@ -624,11 +1094,61 @@ export const storageUtils = {
    */
   getPreferences: () => {
     const prefs = localStorage.getItem('preferences');
-    return prefs ? JSON.parse(prefs) : {};
+    return prefs ? JSON.parse(prefs) : {
+      theme: 'light',
+      language: 'en',
+      notifications: true,
+      autoSave: true,
+      currency: 'USD'
+    };
+  },
+
+  /**
+   * Check storage quota usage
+   * @returns {object} Storage usage information
+   */
+  getStorageUsage: () => {
+    if (!navigator.storage || !navigator.storage.estimate) {
+      return { supported: false };
+    }
+    
+    return navigator.storage.estimate().then(estimate => ({
+      supported: true,
+      quota: estimate.quota,
+      usage: estimate.usage,
+      usageDetails: estimate.usageDetails,
+      percentUsed: estimate.quota ? (estimate.usage / estimate.quota) * 100 : 0
+    }));
+  },
+
+  /**
+   * Export all localStorage data
+   * @returns {object} All localStorage data
+   */
+  exportData: () => {
+    const data = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      data[key] = localStorage.getItem(key);
+    }
+    return data;
+  },
+
+  /**
+   * Import localStorage data
+   * @param {object} data - Data to import
+   */
+  importData: (data) => {
+    Object.keys(data).forEach(key => {
+      localStorage.setItem(key, data[key]);
+    });
   }
 };
 
-// Error handling utilities
+// ============================================================================
+// ERROR HANDLING UTILITIES
+// ============================================================================
+
 export const errorUtils = {
   /**
    * Parse API error response
@@ -662,6 +1182,7 @@ export const errorUtils = {
       500: 'Server error. Please try again later.',
       502: 'Service temporarily unavailable.',
       503: 'Service temporarily unavailable.',
+      504: 'Request timeout. Please try again.'
     };
     return messages[statusCode] || 'An error occurred. Please try again.';
   },
@@ -670,14 +1191,72 @@ export const errorUtils = {
    * Log error with context
    * @param {Error} error - Error object
    * @param {string} context - Error context
+   * @param {object} additionalData - Additional data to log
    */
-  logError: (error, context = '') => {
+  logError: (error, context = '', additionalData = {}) => {
     const timestamp = dateUtils.getCurrentUTC();
-    console.error(`[${timestamp}] ${context}:`, error);
+    const errorInfo = {
+      timestamp,
+      context,
+      message: error.message,
+      stack: error.stack,
+      ...additionalData
+    };
+    
+    console.error(`[${timestamp}] ${context}:`, errorInfo);
+    
+    // In production, you might want to send this to an error tracking service
+    // Example: sendToErrorTracker(errorInfo);
+  },
+
+  /**
+   * Create error boundary compatible error
+   * @param {string} message - Error message
+   * @param {string} code - Error code
+   * @param {object} metadata - Additional metadata
+   * @returns {Error} Formatted error
+   */
+  createError: (message, code = 'UNKNOWN_ERROR', metadata = {}) => {
+    const error = new Error(message);
+    error.code = code;
+    error.metadata = metadata;
+    error.timestamp = dateUtils.getCurrentUTC();
+    return error;
+  },
+
+  /**
+   * Retry function with exponential backoff
+   * @param {Function} fn - Function to retry
+   * @param {number} maxRetries - Maximum number of retries
+   * @param {number} baseDelay - Base delay in milliseconds
+   * @returns {Promise} Promise that resolves when function succeeds
+   */
+  retryWithBackoff: async (fn, maxRetries = 3, baseDelay = 1000) => {
+    let lastError;
+    
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        return await fn();
+      } catch (error) {
+        lastError = error;
+        
+        if (attempt === maxRetries) {
+          throw lastError;
+        }
+        
+        const delay = baseDelay * Math.pow(2, attempt);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+    
+    throw lastError;
   }
 };
 
-// Device and browser utilities
+// ============================================================================
+// DEVICE AND BROWSER UTILITIES
+// ============================================================================
+
 export const deviceUtils = {
   /**
    * Check if device is mobile
@@ -701,17 +1280,32 @@ export const deviceUtils = {
   },
 
   /**
-   * Get browser name
-   * @returns {string} Browser name
+   * Get browser name and version
+   * @returns {object} Browser information
    */
-  getBrowserName: () => {
+  getBrowserInfo: () => {
     const ua = navigator.userAgent;
-    if (ua.includes('Firefox')) return 'Firefox';
-    if (ua.includes('Chrome')) return 'Chrome';
-    if (ua.includes('Safari')) return 'Safari';
-    if (ua.includes('Edge')) return 'Edge';
-    if (ua.includes('Opera')) return 'Opera';
-    return 'Unknown';
+    let browserName = 'Unknown';
+    let version = 'Unknown';
+
+    if (ua.includes('Firefox')) {
+      browserName = 'Firefox';
+      version = ua.match(/Firefox\/([0-9.]+)/)?.[1] || 'Unknown';
+    } else if (ua.includes('Chrome')) {
+      browserName = 'Chrome';
+      version = ua.match(/Chrome\/([0-9.]+)/)?.[1] || 'Unknown';
+    } else if (ua.includes('Safari') && !ua.includes('Chrome')) {
+      browserName = 'Safari';
+      version = ua.match(/Version\/([0-9.]+)/)?.[1] || 'Unknown';
+    } else if (ua.includes('Edge')) {
+      browserName = 'Edge';
+      version = ua.match(/Edge\/([0-9.]+)/)?.[1] || 'Unknown';
+    } else if (ua.includes('Opera')) {
+      browserName = 'Opera';
+      version = ua.match(/Opera\/([0-9.]+)/)?.[1] || 'Unknown';
+    }
+
+    return { name: browserName, version };
   },
 
   /**
@@ -723,31 +1317,100 @@ export const deviceUtils = {
       width: window.screen.width,
       height: window.screen.height,
       availWidth: window.screen.availWidth,
-      availHeight: window.screen.availHeight
+      availHeight: window.screen.availHeight,
+      devicePixelRatio: window.devicePixelRatio || 1,
+      orientation: screen.orientation?.type || 'unknown'
+    };
+  },
+
+  /**
+   * Check if device supports feature
+   * @param {string} feature - Feature to check
+   * @returns {boolean} True if supported
+   */
+  supportsFeature: (feature) => {
+    const features = {
+      geolocation: 'geolocation' in navigator,
+      notification: 'Notification' in window,
+      serviceWorker: 'serviceWorker' in navigator,
+      localStorage: 'localStorage' in window,
+      sessionStorage: 'sessionStorage' in window,
+      camera: 'mediaDevices' in navigator && 'getUserMedia' in navigator.mediaDevices,
+      webgl: (() => {
+        try {
+          const canvas = document.createElement('canvas');
+          return !!(canvas.getContext('webgl') || canvas.getContext('experimental-webgl'));
+        } catch {
+          return false;
+        }
+      })(),
+      webrtc: 'RTCPeerConnection' in window,
+      websocket: 'WebSocket' in window,
+      indexeddb: 'indexedDB' in window,
+      fullscreen: 'requestFullscreen' in document.documentElement
+    };
+
+    return features[feature] || false;
+  },
+
+  /**
+   * Get device capabilities
+   * @returns {object} Device capabilities
+   */
+  getCapabilities: () => {
+    return {
+      isMobile: deviceUtils.isMobile(),
+      deviceType: deviceUtils.getDeviceType(),
+      browser: deviceUtils.getBrowserInfo(),
+      screen: deviceUtils.getScreenDimensions(),
+      features: {
+        geolocation: deviceUtils.supportsFeature('geolocation'),
+        notification: deviceUtils.supportsFeature('notification'),
+        camera: deviceUtils.supportsFeature('camera'),
+        localStorage: deviceUtils.supportsFeature('localStorage'),
+        webgl: deviceUtils.supportsFeature('webgl')
+      },
+      connection: navigator.connection ? {
+        effectiveType: navigator.connection.effectiveType,
+        downlink: navigator.connection.downlink,
+        rtt: navigator.connection.rtt
+      } : null
     };
   }
 };
 
-// Notification utilities
+// ============================================================================
+// NOTIFICATION UTILITIES
+// ============================================================================
+
 export const notificationUtils = {
   /**
    * Show browser notification
    * @param {string} title - Notification title
    * @param {string} body - Notification body
-   * @param {string} icon - Notification icon URL
+   * @param {object} options - Notification options
    */
-  showNotification: (title, body, icon = null) => {
+  showNotification: (title, body, options = {}) => {
     if (!("Notification" in window)) {
       console.log("This browser does not support notifications");
       return;
     }
 
+    const defaultOptions = {
+      body,
+      icon: '/favicon.ico',
+      badge: '/favicon.ico',
+      tag: 'app-notification',
+      requireInteraction: false,
+      ...options
+    };
+
     if (Notification.permission === "granted") {
-      new Notification(title, { body, icon });
+      new Notification(title, defaultOptions);
     } else if (Notification.permission !== "denied") {
       Notification.requestPermission().then(permission => {
         if (permission === "granted") {
-          new Notification(title, { body, icon });
+          new Notification(title, defaultOptions);
         }
       });
     }
@@ -762,27 +1425,119 @@ export const notificationUtils = {
       return Promise.reject("Notifications not supported");
     }
     return Notification.requestPermission();
+  },
+
+  /**
+   * Check notification permission status
+   * @returns {string} Permission status
+   */
+  getPermissionStatus: () => {
+    if (!("Notification" in window)) {
+      return "not-supported";
+    }
+    return Notification.permission;
+  },
+
+  /**
+   * Create in-app notification
+   * @param {string} type - Notification type (success, error, warning, info)
+   * @param {string} message - Notification message
+   * @param {number} duration - Duration in milliseconds
+   * @returns {object} Notification object
+   */
+  createInAppNotification: (type, message, duration = 5000) => {
+    const notification = {
+      id: Date.now().toString(),
+      type,
+      message,
+      timestamp: new Date(),
+      duration,
+      isVisible: true
+    };
+
+    // Automatically hide after duration
+    if (duration > 0) {
+      setTimeout(() => {
+        notification.isVisible = false;
+      }, duration);
+    }
+
+    return notification;
+  },
+
+  /**
+   * Format notification for display
+   * @param {object} notification - Notification object
+   * @returns {object} Formatted notification
+   */
+  formatNotification: (notification) => {
+    const typeConfig = {
+      success: {
+        icon: '✅',
+        color: 'green',
+        bgColor: 'bg-green-100',
+        textColor: 'text-green-800'
+      },
+      error: {
+        icon: '❌',
+        color: 'red',
+        bgColor: 'bg-red-100',
+        textColor: 'text-red-800'
+      },
+      warning: {
+        icon: '⚠️',
+        color: 'yellow',
+        bgColor: 'bg-yellow-100',
+        textColor: 'text-yellow-800'
+      },
+      info: {
+        icon: 'ℹ️',
+        color: 'blue',
+        bgColor: 'bg-blue-100',
+        textColor: 'text-blue-800'
+      }
+    };
+
+    return {
+      ...notification,
+      config: typeConfig[notification.type] || typeConfig.info,
+      relativeTime: dateUtils.getRelativeTime(notification.timestamp)
+    };
   }
 };
 
-// System info utilities
+// ============================================================================
+// SYSTEM UTILITIES
+// ============================================================================
+
 export const systemUtils = {
   /**
-   * Get system information
+   * Get comprehensive system information
    * @returns {object} System information
    */
   getSystemInfo: () => {
     return {
-      userAgent: navigator.userAgent,
-      platform: navigator.platform,
-      language: navigator.language,
-      cookieEnabled: navigator.cookieEnabled,
-      onLine: navigator.onLine,
-      deviceType: deviceUtils.getDeviceType(),
-      browser: deviceUtils.getBrowserName(),
-      screen: deviceUtils.getScreenDimensions(),
       timestamp: dateUtils.getCurrentUTC(),
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+      user: {
+        agent: navigator.userAgent,
+        platform: navigator.platform,
+        language: navigator.language,
+        languages: navigator.languages,
+        cookieEnabled: navigator.cookieEnabled,
+        onLine: navigator.onLine,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+      },
+      device: deviceUtils.getCapabilities(),
+      storage: {
+        localStorage: systemUtils.isLocalStorageAvailable(),
+        sessionStorage: systemUtils.isSessionStorageAvailable(),
+        indexedDB: 'indexedDB' in window
+      },
+      performance: performance.memory ? {
+        usedJSHeapSize: performance.memory.usedJSHeapSize,
+        totalJSHeapSize: performance.memory.totalJSHeapSize,
+        jsHeapSizeLimit: performance.memory.jsHeapSizeLimit
+      } : null
     };
   },
 
@@ -792,12 +1547,191 @@ export const systemUtils = {
    */
   isLocalStorageAvailable: () => {
     try {
-      const test = 'test';
+      const test = '__localStorage_test__';
       localStorage.setItem(test, test);
       localStorage.removeItem(test);
       return true;
     } catch (e) {
       return false;
     }
+  },
+
+  /**
+   * Check if sessionStorage is available
+   * @returns {boolean} True if available
+   */
+  isSessionStorageAvailable: () => {
+    try {
+      const test = '__sessionStorage_test__';
+      sessionStorage.setItem(test, test);
+      sessionStorage.removeItem(test);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  },
+
+  /**
+   * Get app version info
+   * @returns {object} Version information
+   */
+  getVersionInfo: () => {
+    return {
+      app: '1.0.0', // You can set this from package.json
+      build: process.env.REACT_APP_BUILD_NUMBER || 'dev',
+      environment: process.env.NODE_ENV || 'development',
+      timestamp: '2025-07-01 09:17:07',
+      author: 'aadityabinod'
+    };
+  },
+
+  /**
+   * Generate unique session ID
+   * @returns {string} Unique session ID
+   */
+  generateSessionId: () => {
+    return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+  },
+
+  /**
+   * Get app configuration
+   * @returns {object} App configuration
+   */
+  getAppConfig: () => {
+    return {
+      name: 'Fintech App',
+      version: systemUtils.getVersionInfo(),
+      features: {
+        kyc: true,
+        dashboard: true,
+        financialDashboard: true,
+        notifications: true,
+        multiLanguage: false,
+        darkMode: false
+      },
+      api: {
+        baseUrl: process.env.REACT_APP_API_URL || 'http://localhost:8000',
+        timeout: 30000,
+        retries: 3
+      },
+      storage: {
+        prefix: 'fintech_app_',
+        encryption: false,
+        compression: false
+      }
+    };
+  },
+
+  /**
+   * Debug information for troubleshooting
+   * @returns {object} Debug information
+   */
+  getDebugInfo: () => {
+    return {
+      system: systemUtils.getSystemInfo(),
+      config: systemUtils.getAppConfig(),
+      storage: {
+        localStorage: storageUtils.exportData(),
+        preferences: storageUtils.getPreferences()
+      },
+      errors: [], // This could be populated from an error tracking system
+      performance: {
+        loadTime: performance.now(),
+        navigationStart: performance.timing?.navigationStart || 0,
+        domContentLoaded: performance.timing?.domContentLoadedEventEnd || 0
+      }
+    };
   }
+};
+
+// ============================================================================
+// UTILITY CONSTANTS
+// ============================================================================
+
+export const CONSTANTS = {
+  // Date formats
+  DATE_FORMATS: {
+    SHORT: 'short',
+    LONG: 'long',
+    TIME: 'time',
+    DATETIME: 'datetime',
+    ISO: 'iso',
+    UTC: 'utc',
+    READABLE: 'readable'
+  },
+
+  // KYC statuses
+  KYC_STATUS: {
+    DRAFT: 'draft',
+    PENDING: 'pending',
+    APPROVED: 'approved',
+    REJECTED: 'rejected',
+    EXPIRED: 'expired',
+    SUSPENDED: 'suspended'
+  },
+
+  // User roles
+  USER_ROLES: {
+    ADMIN: 'admin',
+    MANAGER: 'manager',
+    MODERATOR: 'moderator',
+    SUPPORT: 'support',
+    USER: 'user',
+    GUEST: 'guest'
+  },
+
+  // File types
+  FILE_TYPES: {
+    IMAGE: ['image/jpeg', 'image/png', 'image/jpg'],
+    DOCUMENT: ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'],
+    ALL: ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf']
+  },
+
+  // Notification types
+  NOTIFICATION_TYPES: {
+    SUCCESS: 'success',
+    ERROR: 'error',
+    WARNING: 'warning',
+    INFO: 'info'
+  },
+
+  // Currency codes
+  CURRENCIES: {
+    USD: 'USD',
+    EUR: 'EUR',
+    GBP: 'GBP',
+    JPY: 'JPY',
+    NPR: 'NPR',
+    INR: 'INR',
+    CNY: 'CNY',
+    AUD: 'AUD',
+    CAD: 'CAD'
+  },
+
+  // Default values
+  DEFAULTS: {
+    CURRENCY: 'USD',
+    LANGUAGE: 'en',
+    THEME: 'light',
+    PAGE_SIZE: 20,
+    MAX_FILE_SIZE_MB: 5,
+    SESSION_TIMEOUT_HOURS: 24,
+    NOTIFICATION_DURATION: 5000
+  }
+};
+
+// Export all utilities as a single object for convenience
+export default {
+  dateUtils,
+  validationUtils,
+  roleUtils,
+  kycUtils,
+  fileUtils,
+  financialUtils,
+  storageUtils,
+  errorUtils,
+  deviceUtils,
+  notificationUtils,
+  systemUtils,
+  CONSTANTS
 };
