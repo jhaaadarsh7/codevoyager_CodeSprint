@@ -12,6 +12,7 @@ import {
   CreditCard, 
   Wallet,
   Hotel,
+    CalendarDays ,// Fixed import - using CalendarDays instead of Calendar
   ShoppingBag,
   Ticket,
   Plane,
@@ -30,7 +31,13 @@ import {
   Shield,
   Globe,
   Activity,
-  Clock
+  Clock,
+  Wifi,
+  Signal,
+  Battery,
+  MapPin,
+  Eye,
+  RefreshCw
 } from "lucide-react";
 
 export default function EnhancedFinancialDashboard() {
@@ -49,9 +56,9 @@ export default function EnhancedFinancialDashboard() {
   
   const navigate = useNavigate();
   
-  // Current date and time - July 1, 2025 09:20:55 UTC
+  // Current date and time - July 1, 2025 10:08:10 UTC
   const [currentTime, setCurrentTime] = useState(() => {
-    const utcTime = new Date('2025-07-01T09:20:55Z');
+    const utcTime = new Date('2025-07-01T10:08:10Z');
     return utcTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   });
   
@@ -62,8 +69,8 @@ export default function EnhancedFinancialDashboard() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      // Simulate real-time updates from the base time
-      const baseTime = new Date('2025-07-01T09:20:55Z');
+      // Simulate real-time updates from the base time (10:08:10 UTC)
+      const baseTime = new Date('2025-07-01T10:08:10Z');
       const now = new Date(baseTime.getTime() + Date.now() % (24 * 60 * 60 * 1000));
       setCurrentTime(now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
     }, 1000);
@@ -119,28 +126,97 @@ export default function EnhancedFinancialDashboard() {
       name: "Mobile Top-up",
       icon: <Smartphone className="w-6 h-6" />,
       color: "bg-gradient-to-br from-yellow-400 to-yellow-600",
-      action: () => alert("📱 Mobile Top-up: Coming in Q3 2025! Stay tuned for Ncell, NTC, and Smart Cell integration.")
+      action: () => alert(`📱 Mobile Top-up Service
+
+Current Time: 2025-07-01 10:08:10 UTC
+User: aadityabinod
+
+Available Networks:
+• Ncell - Instant top-up
+• Nepal Telecom (NTC) - Voice & Data
+• Smart Telecom - 4G packages
+• UTL - Local & International
+
+Coming Features:
+✓ Auto top-up scheduling
+✓ Family plan management  
+✓ Tourist SIM card activation
+✓ International roaming packages
+
+Launch: Q3 2025 - Stay tuned!`)
     },
     {
       id: 2,
       name: "Bank Transfer",
       icon: <Building2 className="w-6 h-6" />,
       color: "bg-gradient-to-br from-green-400 to-green-600",
-      action: () => alert("🏦 Bank Transfer: Direct integration with major Nepali banks launching soon!")
+      action: () => alert(`🏦 Bank Transfer Service
+
+Current Time: 2025-07-01 10:08:10 UTC
+User: aadityabinod
+
+Supported Banks:
+• Nepal Rastra Bank
+• Nabil Bank Limited
+• Nepal Investment Bank
+• Himalayan Bank
+• Standard Chartered Nepal
+
+Features:
+✓ Real-time transfers
+✓ International wire transfers
+✓ Multi-currency support
+✓ Tourist-friendly verification
+
+Integration with major Nepali banks launching soon!`)
     },
     {
       id: 3,
       name: "Card Payment",
       icon: <CreditCard className="w-6 h-6" />,
       color: "bg-gradient-to-br from-blue-400 to-blue-600",
-      action: () => alert("💳 Card Payment: Secure card processing with international support coming next month!")
+      action: () => alert(`💳 Card Payment System
+
+Current Time: 2025-07-01 10:08:10 UTC
+User: aadityabinod
+
+Accepted Cards:
+• Visa (Local & International)
+• Mastercard (Global)
+• UnionPay (Asian markets)
+• NPAY (Nepal's digital wallet)
+
+Security Features:
+✓ 3D Secure authentication
+✓ Biometric verification
+✓ Real-time fraud detection
+✓ Tourist protection coverage
+
+Secure card processing with international support coming next month!`)
     },
     {
       id: 4,
       name: "Digital Wallet",
       icon: <Wallet className="w-6 h-6" />,
       color: "bg-gradient-to-br from-purple-400 to-purple-600",
-      action: () => alert("💰 Digital Wallet: Top-up your wallet instantly - launching July 15, 2025!")
+      action: () => alert(`💰 Digital Wallet Service
+
+Current Time: 2025-07-01 10:08:10 UTC
+User: aadityabinod
+
+Wallet Features:
+• Instant top-up from any bank
+• QR code payments
+• P2P money transfers
+• Bill payment automation
+
+Tourist Benefits:
+✓ Multi-currency wallet
+✓ Offline payment capability
+✓ Tourist merchant discounts
+✓ 24/7 customer support
+
+Launch Date: July 15, 2025 - Get ready!`)
     }
   ];
 
@@ -152,7 +228,7 @@ export default function EnhancedFinancialDashboard() {
       color: "bg-blue-50 hover:bg-blue-100",
       textColor: "text-blue-700",
       iconColor: "text-blue-600",
-    action: () => navigate("/hotels") // Navigate to hotel booking
+      action: () => navigate("/hotels") // Navigate to hotel booking
     },
     {
       id: 2,
@@ -161,7 +237,24 @@ export default function EnhancedFinancialDashboard() {
       color: "bg-green-50 hover:bg-green-100",
       textColor: "text-green-700",
       iconColor: "text-green-600",
-      action: () => alert("🛒 Shopping: Exclusive deals at Durbar Marg, New Road, and major shopping centers!")
+      action: () => alert(`🛒 Shopping Partners
+
+Current Time: 2025-07-01 10:08:10 UTC
+User: aadityabinod
+
+Premium Shopping Locations:
+📍 Durbar Marg - Luxury brands & boutiques
+📍 New Road - Traditional & modern shopping
+📍 Thamel - Tourist specialties & souvenirs
+📍 Asan Bazaar - Local markets & spices
+
+Tourist Benefits:
+✓ Tax-free shopping certificates
+✓ International shipping assistance
+✓ Authentic product guarantees
+✓ Multi-language support
+
+Exclusive deals at major shopping centers!`)
     },
     {
       id: 3,
@@ -170,7 +263,7 @@ export default function EnhancedFinancialDashboard() {
       color: "bg-purple-50 hover:bg-purple-100",
       textColor: "text-purple-700",
       iconColor: "text-purple-600",
-      action: () => alert("🎫 Transport: Book buses, flights, and local transport with tourist discounts!")
+      action: () => navigate("/tickets") // Navigate to ticket booking
     },
     {
       id: 4,
@@ -179,7 +272,25 @@ export default function EnhancedFinancialDashboard() {
       color: "bg-orange-50 hover:bg-orange-100",
       textColor: "text-orange-700",
       iconColor: "text-orange-600",
-      action: () => alert("✈️ Adventure: Trekking, rafting, and mountain flights - experience Nepal like never before!")
+      action: () => alert(`✈️ Adventure Tourism
+
+Current Time: 2025-07-01 10:08:10 UTC
+User: aadityabinod
+
+Adventure Packages:
+🏔️ Everest Base Camp Trek - 14 days
+🚁 Mountain Flight - Himalayan views
+🚣 White Water Rafting - Trishuli River
+🦅 Paragliding - Pokhara adventures
+🐅 Jungle Safari - Chitwan National Park
+
+Special July Offers:
+✓ Monsoon trekking routes available
+✓ Indoor adventure activities
+✓ Cultural immersion programs
+✓ Professional guide services
+
+Experience Nepal like never before!`)
     }
   ];
 
@@ -192,7 +303,23 @@ export default function EnhancedFinancialDashboard() {
       textColor: "text-green-700",
       iconColor: "text-green-600",
       status: isVerified() ? "Verified" : "Pending",
-      action: () => !isVerified() ? navigate("/kyc") : alert("✅ KYC Status: Verified! You can now access all premium features.")
+      action: () => !isVerified() ? navigate("/kyc") : alert(`✅ KYC Status: Verified!
+
+Current Time: 2025-07-01 10:08:10 UTC
+User: aadityabinod
+
+Verification Status: ✅ COMPLETED
+Document Status: All verified
+Account Level: Premium Tourist
+
+Unlocked Features:
+✓ Higher transaction limits
+✓ International transfers
+✓ VIP customer support
+✓ Exclusive exchange rates
+✓ Priority booking access
+
+You can now access all premium features!`)
     },
     {
       id: 2,
@@ -201,7 +328,25 @@ export default function EnhancedFinancialDashboard() {
       color: "bg-indigo-50 hover:bg-indigo-100",
       textColor: "text-indigo-700",
       iconColor: "text-indigo-600",
-      action: () => alert("💱 Currency Exchange: Live rates updated! Exchange USD, EUR, GBP to NPR with best rates.")
+      action: () => alert(`💱 Live Currency Exchange
+
+Current Time: 2025-07-01 10:08:10 UTC
+User: aadityabinod
+
+Current Exchange Rates (Live):
+🇺🇸 USD 1 = NPR ${conversionRate.toFixed(2)}
+🇪🇺 EUR 1 = NPR ${(conversionRate * 1.08).toFixed(2)}
+🇬🇧 GBP 1 = NPR ${(conversionRate * 1.26).toFixed(2)}
+🇯🇵 JPY 100 = NPR ${(conversionRate * 0.68).toFixed(2)}
+
+Tourist Benefits:
+✓ 2% bonus on exchange rates
+✓ Zero hidden fees
+✓ Real-time rate updates
+✓ Instant conversion
+✓ Multi-currency wallet support
+
+Best rates in Nepal - Exchange now!`)
     },
     {
       id: 3,
@@ -210,7 +355,25 @@ export default function EnhancedFinancialDashboard() {
       color: "bg-cyan-50 hover:bg-cyan-100",
       textColor: "text-cyan-700",
       iconColor: "text-cyan-600",
-      action: () => alert("📊 Travel Analytics: Track your spending, budget insights, and expense categories!")
+      action: () => alert(`📊 Travel Analytics Dashboard
+
+Current Time: 2025-07-01 10:08:10 UTC
+User: aadityabinod
+
+Your Travel Insights:
+💰 Total Spent: NPR ${formatNumber(balance * 0.25)}
+🏨 Accommodation: 35% of budget
+🍽️ Food & Dining: 28% of budget
+🚌 Transportation: 22% of budget
+🎭 Entertainment: 15% of budget
+
+Smart Recommendations:
+✓ Best spending categories
+✓ Budget optimization tips
+✓ Upcoming expense predictions
+✓ Cost-saving opportunities
+
+Track your spending with detailed insights!`)
     }
   ];
 
@@ -229,7 +392,18 @@ export default function EnhancedFinancialDashboard() {
       active: false, 
       color: "text-gray-400",
       bgColor: "bg-transparent",
-      action: () => alert("📋 Transaction History: View all your currency exchanges, payments, and travel expenses.")
+      action: () => alert(`📋 Transaction History
+
+Current Time: 2025-07-01 10:08:10 UTC
+User: aadityabinod
+
+Recent Activity:
+✓ Currency exchanges: 12 transactions
+✓ Hotel bookings: 3 reservations
+✓ Event tickets: 2 purchases
+✓ Transport bookings: 5 trips
+
+View all your currency exchanges, payments, and travel expenses in detailed history.`)
     },
     { 
       name: "Scan", 
@@ -237,7 +411,18 @@ export default function EnhancedFinancialDashboard() {
       active: false, 
       color: "text-gray-400",
       bgColor: "bg-transparent",
-      action: () => alert("📷 QR Scanner: Scan QR codes for instant payments at partner merchants!")
+      action: () => alert(`📷 QR Code Scanner
+
+Current Time: 2025-07-01 10:08:10 UTC
+User: aadityabinod
+
+Scanner Features:
+✓ Merchant payment QR codes
+✓ Event ticket verification
+✓ Hotel check-in codes
+✓ Transport booking confirmations
+
+Scan QR codes for instant payments at 500+ partner merchants across Nepal!`)
     },
     { 
       name: "Cards", 
@@ -245,7 +430,19 @@ export default function EnhancedFinancialDashboard() {
       active: false, 
       color: "text-gray-400",
       bgColor: "bg-transparent",
-      action: () => alert("💳 Card Management: Add, manage, and secure your payment cards.")
+      action: () => alert(`💳 Card Management Center
+
+Current Time: 2025-07-01 10:08:10 UTC
+User: aadityabinod
+
+Card Services:
+✓ Add/Remove payment cards
+✓ Set spending limits
+✓ Enable/Disable international usage
+✓ View transaction history
+✓ Report lost/stolen cards
+
+Secure card management with 24/7 fraud protection.`)
     },
     { 
       name: "Profile", 
@@ -257,35 +454,39 @@ export default function EnhancedFinancialDashboard() {
     }
   ];
 
-  // Updated notifications with current context
+  // Updated notifications with current context and icons
   const notifications = [
     { 
       id: 1, 
       title: "Welcome to Nepal! 🇳🇵", 
       message: `Hi ${getUserDisplayName()}, enjoy your visit! Exchange rate: USD 1 = NPR ${conversionRate.toFixed(2)}`, 
       time: "Just now",
-      type: "success"
+      type: "success",
+      icon: <Globe className="w-4 h-4" />
     },
     { 
       id: 2, 
       title: "KYC Status Update", 
       message: isVerified() ? "✅ Your identity is verified! All features unlocked." : "⏳ Please complete your KYC verification to unlock all features.", 
       time: "5 min ago",
-      type: isVerified() ? "success" : "warning"
+      type: isVerified() ? "success" : "warning",
+      icon: isVerified() ? <CheckCircle className="w-4 h-4" /> : <Clock className="w-4 h-4" />
     },
     { 
       id: 3, 
       title: "Tourist Rate Alert 📈", 
       message: "Special tourist exchange rates available! Save up to 2% on currency conversion.", 
       time: "1 hour ago",
-      type: "info"
+      type: "info",
+      icon: <TrendingUp className="w-4 h-4" />
     },
     { 
       id: 4, 
       title: "Account Security", 
       message: `Account ${user?.email || 'aadityabinod@example.com'} - Last login: ${dateUtils.formatDate(currentDate, 'readable')}`, 
       time: user?.createdAt ? dateUtils.getRelativeTime(user.createdAt) : "Recently joined",
-      type: "feature"
+      type: "feature",
+      icon: <Shield className="w-4 h-4" />
     }
   ];
 
@@ -296,7 +497,19 @@ export default function EnhancedFinancialDashboard() {
   const handleRefreshData = async () => {
     try {
       await refreshUser();
-      alert("📊 Data refreshed! Exchange rates and account info updated.");
+      alert(`📊 Data Refresh Complete!
+
+Current Time: 2025-07-01 10:08:10 UTC
+User: aadityabinod
+
+Updated Information:
+✓ Exchange rates refreshed
+✓ Account balance updated
+✓ User profile synchronized
+✓ Notification status checked
+✓ Security settings verified
+
+All data is now current and up-to-date!`);
     } catch (error) {
       alert("❌ Failed to refresh data. Please try again.");
     }
@@ -314,16 +527,13 @@ export default function EnhancedFinancialDashboard() {
           </div>
           <div className="flex items-center space-x-2">
             <div className="flex space-x-1">
-              <div className="w-1 h-3 bg-white rounded-full opacity-100"></div>
-              <div className="w-1 h-3 bg-white rounded-full opacity-100"></div>
-              <div className="w-1 h-3 bg-white rounded-full opacity-75"></div>
-              <div className="w-1 h-3 bg-white rounded-full opacity-50"></div>
+              <Signal className="w-4 h-4" />
             </div>
-            <div className="w-6 h-3 bg-white rounded-sm relative">
-              <div className="w-5 h-2 bg-green-500 rounded-sm absolute top-0.5 left-0.5"></div>
-              <div className="w-1 h-1 bg-white rounded-full absolute -right-0.5 top-1"></div>
+            <Wifi className="w-4 h-4" />
+            <div className="flex items-center space-x-1">
+              <Battery className="w-4 h-4" />
+              <div className="text-xs font-bold">5G</div>
             </div>
-            <div className="text-xs font-bold">5G</div>
           </div>
         </div>
 
@@ -333,17 +543,13 @@ export default function EnhancedFinancialDashboard() {
           <div className="relative z-10">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg border-2 border-white">
-                  <span className="text-blue-600 font-bold text-lg">
-                    {getInitials() || 'AB'}
-                  </span>
-                </div>
+                
                 <div>
                   <h1 className="text-white font-bold text-xl">
                     Namaste, {getUserDisplayName()}! 🙏
                   </h1>
                   <p className="text-blue-100 text-sm flex items-center">
-                    <Globe className="w-3 h-3 mr-1" />
+                    <MapPin className="w-3 h-3 mr-1" />
                     Tourist in Nepal
                   </p>
                   {isAdmin() && (
@@ -358,8 +564,9 @@ export default function EnhancedFinancialDashboard() {
                 <button 
                   onClick={() => setShowNotifications(!showNotifications)}
                   className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all relative backdrop-blur-sm"
+                  title="Notifications"
                 >
-                  <Bell className="w-5 h-5 text-white" />
+                  <Bell className="w-5 h-5 text-black" />
                   {notifications.length > 0 && (
                     <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
                       <span className="text-xs text-white font-bold">{notifications.length}</span>
@@ -369,20 +576,23 @@ export default function EnhancedFinancialDashboard() {
                 <button 
                   onClick={handleRefreshData}
                   className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all backdrop-blur-sm"
+                  title="Refresh Data"
                 >
-                  <Activity className="w-5 h-5 text-white" />
+                  <RefreshCw className="w-5 h-5 text-black" />
                 </button>
                 <button 
                   onClick={() => navigate("/dashboard")}
-                  className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all backdrop-blur-sm"
+                  className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex text-black items-center justify-center hover:bg-opacity-30 transition-all backdrop-blur-sm"
+                  title="Settings"
                 >
-                  <Settings className="w-5 h-5 text-white" />
+                  <Settings className="w-5 h-5 text-black" />
                 </button>
                 <button 
                   onClick={handleLogout}
                   className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all backdrop-blur-sm"
+                  title="Logout"
                 >
-                  <LogOut className="w-5 h-5 text-white" />
+                  <LogOut className="w-5 h-5 text-black" />
                 </button>
               </div>
             </div>
@@ -414,15 +624,20 @@ export default function EnhancedFinancialDashboard() {
                 {notifications.map(notification => (
                   <div key={notification.id} className="p-4 border-b last:border-b-0 hover:bg-gray-50 transition-colors">
                     <div className="flex items-start space-x-3">
-                      <div className={`w-2 h-2 rounded-full mt-2 ${
-                        notification.type === 'success' ? 'bg-green-500' :
-                        notification.type === 'warning' ? 'bg-yellow-500' :
-                        notification.type === 'info' ? 'bg-blue-500' : 'bg-purple-500'
-                      }`}></div>
+                      <div className={`p-1 rounded-full mt-1 ${
+                        notification.type === 'success' ? 'bg-green-100 text-green-600' :
+                        notification.type === 'warning' ? 'bg-yellow-100 text-yellow-600' :
+                        notification.type === 'info' ? 'bg-blue-100 text-blue-600' : 'bg-purple-100 text-purple-600'
+                      }`}>
+                        {notification.icon}
+                      </div>
                       <div className="flex-1">
                         <div className="font-semibold text-sm text-gray-800">{notification.title}</div>
                         <div className="text-sm text-gray-600 mt-1">{notification.message}</div>
-                        <div className="text-xs text-gray-400 mt-2">{notification.time}</div>
+                        <div className="text-xs text-gray-400 mt-2 flex items-center">
+                          <Clock className="w-3 h-3 mr-1" />
+                          {notification.time}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -431,8 +646,9 @@ export default function EnhancedFinancialDashboard() {
               <div className="p-3 bg-gray-50 text-center">
                 <button 
                   onClick={() => alert("📱 View all notifications in the mobile app!")}
-                  className="text-blue-600 text-sm font-medium hover:underline"
+                  className="text-blue-600 text-sm font-medium hover:underline flex items-center justify-center"
                 >
+                  <Eye className="w-3 h-3 mr-1" />
                   View All Notifications
                 </button>
               </div>
@@ -446,7 +662,8 @@ export default function EnhancedFinancialDashboard() {
           <div className="bg-gradient-to-br from-indigo-600 via-blue-600 to-blue-700 rounded-2xl shadow-xl p-6 text-white relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-16 -mt-16"></div>
             <div className="absolute bottom-0 left-0 w-24 h-24 bg-white opacity-10 rounded-full -ml-12 -mb-12"></div>
-            <div className="absolute top-4 right-4 text-xs bg-white bg-opacity-20 px-2 py-1 rounded-full">
+            <div className="absolute top-4 right-4 text-xs bg-white bg-opacity-20 px-2 py-1 rounded-full flex items-center">
+              <CalendarDays className="w-3 h-3 mr-1" />
               July 1, 2025
             </div>
             
@@ -459,7 +676,10 @@ export default function EnhancedFinancialDashboard() {
                   <span className="text-blue-100 font-medium">Tourist Account Balance</span>
                 </div>
                 <div className="text-right">
-                  <p className="text-blue-200 text-xs">Live USD Rate</p>
+                  <p className="text-blue-200 text-xs flex items-center">
+                    <TrendingUp className="w-3 h-3 mr-1" />
+                    Live USD Rate
+                  </p>
                   <p className="text-white font-bold text-sm">
                     NPR {conversionRate.toFixed(2)}
                   </p>
@@ -477,7 +697,8 @@ export default function EnhancedFinancialDashboard() {
                 <p className="text-blue-200 text-sm">
                   ≈ ${(balance / conversionRate).toFixed(2)} USD
                 </p>
-                <p className="text-blue-300 text-xs mt-1">
+                <p className="text-blue-300 text-xs mt-1 flex items-center">
+                  <Clock className="w-3 h-3 mr-1" />
                   Updated: {currentTime} • Available for exchange
                 </p>
               </div>
@@ -485,15 +706,24 @@ export default function EnhancedFinancialDashboard() {
               {/* Quick stats */}
               <div className="flex justify-between text-center mt-4 pt-4 border-t border-white border-opacity-20">
                 <div>
-                  <p className="text-xs text-blue-200">Today's Savings</p>
+                  <p className="text-xs text-blue-200 flex items-center justify-center">
+                    <TrendingUp className="w-3 h-3 mr-1" />
+                    Today's Savings
+                  </p>
                   <p className="font-bold">NPR 2,847</p>
                 </div>
                 <div>
-                  <p className="text-xs text-blue-200">Exchange Count</p>
+                  <p className="text-xs text-blue-200 flex items-center justify-center">
+                    <Activity className="w-3 h-3 mr-1" />
+                    Exchange Count
+                  </p>
                   <p className="font-bold">12 times</p>
                 </div>
                 <div>
-                  <p className="text-xs text-blue-200">Tourist Bonus</p>
+                  <p className="text-xs text-blue-200 flex items-center justify-center">
+                    <Star className="w-3 h-3 mr-1" />
+                    Tourist Bonus
+                  </p>
                   <p className="font-bold">+2.5%</p>
                 </div>
               </div>
@@ -509,7 +739,10 @@ export default function EnhancedFinancialDashboard() {
                 </div>
                 <h2 className="font-bold text-gray-800 text-xl">Quick Services</h2>
               </div>
-              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">4 available</span>
+              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full flex items-center">
+                <Activity className="w-3 h-3 mr-1" />
+                4 available
+              </span>
             </div>
             
             <div className="grid grid-cols-2 gap-4">
@@ -539,7 +772,10 @@ export default function EnhancedFinancialDashboard() {
                 </div>
                 <h2 className="font-bold text-gray-800 text-xl">Tourist Partners</h2>
               </div>
-              <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">500+ locations</span>
+              <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full flex items-center">
+                <MapPin className="w-3 h-3 mr-1" />
+                500+ locations
+              </span>
             </div>
             
             <div className="grid grid-cols-2 gap-4">
@@ -569,7 +805,10 @@ export default function EnhancedFinancialDashboard() {
                 </div>
                 <h2 className="font-bold text-gray-800 text-xl">Premium Features</h2>
               </div>
-              <span className="text-xs text-purple-600 bg-purple-100 px-2 py-1 rounded-full">VIP access</span>
+              <span className="text-xs text-purple-600 bg-purple-100 px-2 py-1 rounded-full flex items-center">
+                <Shield className="w-3 h-3 mr-1" />
+                VIP access
+              </span>
             </div>
             
             <div className="space-y-4">
@@ -588,11 +827,12 @@ export default function EnhancedFinancialDashboard() {
                     </span>
                   </div>
                   {feature.status && (
-                    <span className={`text-xs px-3 py-1 rounded-full font-bold ${
+                    <span className={`text-xs px-3 py-1 rounded-full font-bold flex items-center ${
                       feature.status === 'Verified' 
-                        ? 'bg-green-200 text-green-800 animate-pulse' 
+                        ? 'bg-green-200 text-green-800' 
                         : 'bg-yellow-200 text-yellow-800'
                     }`}>
+                      {feature.status === 'Verified' ? <CheckCircle className="w-3 h-3 mr-1" /> : <Clock className="w-3 h-3 mr-1" />}
                       {feature.status}
                     </span>
                   )}
@@ -613,8 +853,14 @@ export default function EnhancedFinancialDashboard() {
               💡 <strong>Currency Exchange Tip:</strong> Best exchange rates are typically found in Thamel and New Road areas. Always carry some NPR cash for local markets and street vendors!
             </p>
             <div className="flex items-center justify-between text-xs">
-              <span className="text-orange-600">🌡️ Weather: 24°C | 🏔️ Visibility: Clear</span>
-              <span className="text-orange-600">July 1, 2025</span>
+              <span className="text-orange-600 flex items-center">
+                <Eye className="w-3 h-3 mr-1" />
+                🌡️ Weather: 24°C | 🏔️ Visibility: Clear
+              </span>
+              <span className="text-orange-600 flex items-center">
+                <Clock className="w-3 h-3 mr-1" />
+                July 1, 2025 - 10:08 UTC
+              </span>
             </div>
           </div>
         </div>

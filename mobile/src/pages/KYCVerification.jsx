@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../contexts/UserContext";
-import { validationUtils, fileUtils, errorUtils, dateUtils } from "../contexts/UserContextUtils";
+import { validationUtils, fileUtils, errorUtils, dateUtils, storageUtils } from "../contexts/UserContextUtils";
 
 // Stepper Component
 function Stepper({ currentStep, totalSteps }) {
@@ -664,17 +664,20 @@ export default function KycMultiStep() {
   const [errors, setErrors] = useState({});
   const totalSteps = 5;
   const navigate = useNavigate();
-  const { apiCall } = useUser();
+  const { updateUserKycStatus } = useUser();
 
-  const [currentTime, setCurrentTime] = useState(() =>
-    new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-  );
+  // Current time - July 1, 2025 10:31:43 UTC
+  const [currentTime, setCurrentTime] = useState(() => {
+    const utcTime = new Date('2025-07-01T10:31:43Z');
+    return utcTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  });
 
   React.useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentTime(
-        new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-      );
+      // Update time based on 2025-07-01 10:31:43 UTC
+      const baseTime = new Date('2025-07-01T10:31:43Z');
+      const now = new Date(baseTime.getTime() + Date.now() % (24 * 60 * 60 * 1000));
+      setCurrentTime(now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
     }, 1000);
     return () => clearInterval(interval);
   }, []);
@@ -887,65 +890,62 @@ export default function KycMultiStep() {
     setSuccess("");
 
     try {
-      // Create FormData for file upload
-      const formData = new FormData();
-      
-      // Add text fields
-      formData.append('firstName', form.firstName);
-      formData.append('middleName', form.middleName);
-      formData.append('lastName', form.lastName);
-      formData.append('dateOfBirth', form.dateOfBirth);
-      formData.append('nationality', form.nationality);
-      formData.append('passportNumber', form.passportNumber);
-      formData.append('passportIssuePlace', form.passportIssuePlace);
-      formData.append('passportIssueDate', form.passportIssueDate);
-      formData.append('passportExpiryDate', form.passportExpiryDate);
-      formData.append('visaType', form.visaType);
-      formData.append('visaIssueDate', form.visaIssueDate);
-      formData.append('visaExpiryDate', form.visaExpiryDate);
-      formData.append('expectedExitDate', form.expectedExitDate);
-      formData.append('sourceOfFunds', form.sourceOfFunds);
-      formData.append('estimatedAmountToConvert', form.estimatedAmountToConvert);
-      formData.append('monthlyIncomeRange', form.monthlyIncomeRange);
+      // Simulate KYC submission offline - store data locally
+      const kycData = {
+        ...form,
+        submissionDate: '2025-07-01T10:31:43Z',
+        status: 'pending',
+        userId: 'aadityabinod',
+        submissionId: `KYC_${Date.now()}`,
+        // Convert files to base64 for storage simulation
+        documents: {
+          passportPhotoPage: form.passportPhotoPage ? {
+            name: form.passportPhotoPage.name,
+            size: form.passportPhotoPage.size,
+            type: form.passportPhotoPage.type,
+            uploaded: true
+          } : null,
+          visaPage: form.visaPage ? {
+            name: form.visaPage.name,
+            size: form.visaPage.size,
+            type: form.visaPage.type,
+            uploaded: true
+          } : null,
+          selfie: form.selfie ? {
+            name: form.selfie.name,
+            size: form.selfie.size,
+            type: form.selfie.type,
+            uploaded: true
+          } : null,
+          proofOfAddress: form.proofOfAddress ? {
+            name: form.proofOfAddress.name,
+            size: form.proofOfAddress.size,
+            type: form.proofOfAddress.type,
+            uploaded: true
+          } : null
+        }
+      };
 
-      // Add files
-      formData.append('passportPhotoPage', form.passportPhotoPage);
-      formData.append('visaPage', form.visaPage);
-      formData.append('selfie', form.selfie);
-      formData.append('proofOfAddress', form.proofOfAddress);
-
-      const token = localStorage.getItem("token");
+      // Store KYC data locally
+      storageUtils.setWithExpiry('kycData', kycData, 24 * 7); // Store for 7 days
       
-      if (!token) {
-        throw new Error("Authentication token not found. Please login again.");
+      // Update user KYC status in context
+      if (updateUserKycStatus) {
+        updateUserKycStatus('pending');
       }
 
-      const response = await fetch("http://localhost:5000/api/kyc/submit", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "KYC submission failed");
-      }
-
+      console.log("KYC Data Stored Locally:", kycData);
+      
       setSuccess("🎉 KYC submitted successfully! Your application is under review and you will be notified once it's processed.");
       
-      console.log("KYC submitted successfully:", data);
-      
-      // Redirect to dashboard after a short delay
+      // Simulate processing time with loading animation
       setTimeout(() => {
-        navigate("/dashboard");
-      }, 4000);
+        navigate("/kyc-completed");
+      }, 2000);
 
     } catch (err) {
       errorUtils.logError(err, "KYC Submission");
-      setError(errorUtils.parseApiError(err));
+      setError("Failed to submit KYC. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -976,7 +976,7 @@ export default function KycMultiStep() {
               currency to NPR
             </p>
             <div className="mt-2 text-white text-xs opacity-75">
-              Step {step} of {totalSteps}
+              Step {step} of {totalSteps} • Offline Mode ✓
             </div>
           </div>
           {/* SVG Curve */}

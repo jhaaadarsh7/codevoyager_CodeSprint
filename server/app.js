@@ -19,20 +19,22 @@ if (!fs.existsSync(uploadPath)) {
 
 const authRoutes = require('./route/authRoutes');
 const kycRoute = require('./route/kycRoute');
+const walletRoute = require('./route/walletRoute');
 
 const app = express();
 connectDB();
 
 app.use(cors());
 app.use(express.json());
-app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); // Optional static access
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); 
 
 app.get('/', (req, res) => {
   res.json({ status: 'OK', message: 'Fintech backend is running' });
 });
 
 app.use('/api/auth', authRoutes);
-app.use('/api/kyc', kycRoute); // ✅ FIX this base path
+app.use('/api/kyc', kycRoute); 
+app.use('/api/wallet',walletRoute);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
