@@ -1,18 +1,26 @@
+require('dotenv').config(); // TOP of file
 const express = require('express');
 const cors = require('cors');
-const connectDB = require('./config/db')
-require('dotenv').config();
+const connectDB = require('./config/db');
 
+// Verify critical env vars
+if (!process.env.JWT_SECRET) {
+  console.error("FATAL: JWT_SECRET missing!");
+  process.exit(1);
+}
+
+const authRoutes = require('./route/authRoutes');
 const app = express();
 
 connectDB();
- app.use(cors());
- app.use(express.json());
+app.use(cors());
+app.use(express.json());
 
- app.get('/', (req, res) => {
+app.get('/', (req, res) => {
   res.json({ status: 'OK', message: 'Fintech backend is running' });
 });
 
+app.use('/api/auth', authRoutes);
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server started on port ${PORT}`);
