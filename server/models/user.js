@@ -18,14 +18,15 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    Nationality: {
-      type: String,
-      required:true
-    },
 
     kycVerified: {
       type: Boolean,
       default: false,
+    },
+    role: {
+      type: String,
+      enum: ['user', 'admin'],
+      default: 'user',
     },
   },
   {
