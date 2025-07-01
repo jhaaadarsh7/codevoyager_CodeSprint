@@ -816,7 +816,7 @@ export default function KycMultiStep() {
         throw new Error("Authentication token not found. Please login again.");
       }
 
-      const response = await fetch("http://localhost:8000/api/kyc/submit", {
+      const response = await fetch("http://localhost:000/api/kyc/submit", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

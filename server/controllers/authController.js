@@ -66,6 +66,7 @@ exports.login = async (req, res) => {
   { id: user._id, email: user.email, role: user.role },  // ✅ include role
   JWT_SECRET,
   { expiresIn: '7d' }
+  
 );
 
 
