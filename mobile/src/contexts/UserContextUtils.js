@@ -1,6 +1,8 @@
 /**
  * UserContext Utilities
  * Additional helper functions and utilities for user management
+ * Created on: 2025-07-01 08:30:35 UTC
+ * Author: aadityabinod
  */
 
 // Date and time utilities
@@ -8,7 +10,7 @@ export const dateUtils = {
   /**
    * Format date to readable string
    * @param {string|Date} date - Date to format
-   * @param {string} format - Format type ('short', 'long', 'time', 'datetime')
+   * @param {string} format - Format type ('short', 'long', 'time', 'datetime', 'iso')
    * @returns {string} Formatted date string
    */
   formatDate: (date, format = 'short') => {
@@ -34,9 +36,20 @@ export const dateUtils = {
         return dateObj.toLocaleString();
       case 'iso':
         return dateObj.toISOString().split('T')[0];
+      case 'utc':
+        return dateObj.toISOString().replace('T', ' ').split('.')[0];
       default:
         return dateObj.toLocaleDateString();
     }
+  },
+
+  /**
+   * Get current UTC date time in YYYY-MM-DD HH:MM:SS format
+   * @returns {string} Current UTC datetime
+   */
+  getCurrentUTC: () => {
+    const now = new Date();
+    return now.toISOString().replace('T', ' ').split('.')[0];
   },
 
   /**
@@ -151,7 +164,7 @@ export const validationUtils = {
    * @returns {boolean} True if valid
    */
   isValidPhone: (phone) => {
-    const phoneRegex = /^\+?[\d\s\-(/)]{10,}$/;
+    const phoneRegex = /^\+?[\d\s\-\(\)]{10,}$/;
     return phoneRegex.test(phone);
   },
 
@@ -162,7 +175,17 @@ export const validationUtils = {
    */
   isValidPassport: (passport) => {
     const passportRegex = /^[A-Z0-9]{6,9}$/;
-    return passportRegex.test(passport);
+    return passportRegex.test(passport?.toUpperCase());
+  },
+
+  /**
+   * Validate name (only letters and spaces)
+   * @param {string} name - Name to validate
+   * @returns {boolean} True if valid
+   */
+  isValidName: (name) => {
+    const nameRegex = /^[a-zA-Z\s]{2,50}$/;
+    return nameRegex.test(name);
   }
 };
 
@@ -198,19 +221,23 @@ export const roleUtils = {
         'approve_kyc',
         'reject_kyc',
         'view_transactions',
-        'manage_settings'
+        'manage_settings',
+        'view_dashboard',
+        'manage_currency_rates'
       ],
       moderator: [
         'view_kyc',
         'approve_kyc',
         'reject_kyc',
-        'view_transactions'
+        'view_transactions',
+        'view_dashboard'
       ],
       user: [
         'view_profile',
         'edit_profile',
         'submit_kyc',
-        'view_own_transactions'
+        'view_own_transactions',
+        'currency_exchange'
       ],
       guest: [
         'view_profile'
@@ -228,6 +255,37 @@ export const roleUtils = {
   hasPermission: (userRole, permission) => {
     const permissions = roleUtils.getRolePermissions(userRole);
     return permissions.includes(permission);
+  },
+
+  /**
+   * Get role badge configuration
+   * @param {string} role - Role code
+   * @returns {object} Badge configuration
+   */
+  getRoleBadge: (role) => {
+    const badges = {
+      admin: {
+        color: 'bg-red-100 text-red-800',
+        icon: '👑',
+        label: 'Admin'
+      },
+      moderator: {
+        color: 'bg-purple-100 text-purple-800',
+        icon: '🛡️',
+        label: 'Moderator'
+      },
+      user: {
+        color: 'bg-blue-100 text-blue-800',
+        icon: '👤',
+        label: 'User'
+      },
+      guest: {
+        color: 'bg-gray-100 text-gray-800',
+        icon: '👥',
+        label: 'Guest'
+      }
+    };
+    return badges[role] || badges.guest;
   }
 };
 
@@ -246,7 +304,8 @@ export const kycUtils = {
         bgColor: 'bg-yellow-100',
         textColor: 'text-yellow-800',
         borderColor: 'border-yellow-300',
-        icon: '⏳'
+        icon: '⏳',
+        description: 'Your KYC is under review'
       },
       approved: {
         label: 'Verified',
@@ -254,7 +313,8 @@ export const kycUtils = {
         bgColor: 'bg-green-100',
         textColor: 'text-green-800',
         borderColor: 'border-green-300',
-        icon: '✅'
+        icon: '✅',
+        description: 'Your identity has been verified'
       },
       rejected: {
         label: 'Rejected',
@@ -262,7 +322,8 @@ export const kycUtils = {
         bgColor: 'bg-red-100',
         textColor: 'text-red-800',
         borderColor: 'border-red-300',
-        icon: '❌'
+        icon: '❌',
+        description: 'Your KYC was rejected'
       },
       draft: {
         label: 'Incomplete',
@@ -270,7 +331,8 @@ export const kycUtils = {
         bgColor: 'bg-gray-100',
         textColor: 'text-gray-800',
         borderColor: 'border-gray-300',
-        icon: '📝'
+        icon: '📝',
+        description: 'Please complete your KYC'
       }
     };
     return statusInfo[status] || statusInfo.draft;
@@ -290,10 +352,16 @@ export const kycUtils = {
       'dateOfBirth',
       'nationality',
       'passportNumber',
+      'passportIssuePlace',
       'passportIssueDate',
       'passportExpiryDate',
       'visaType',
+      'visaIssueDate',
+      'visaExpiryDate',
+      'expectedExitDate',
       'sourceOfFunds',
+      'estimatedAmountToConvert',
+      'monthlyIncomeRange',
       'passportPhotoPage',
       'visaPage',
       'selfie',
@@ -305,6 +373,41 @@ export const kycUtils = {
     );
 
     return Math.round((completedFields.length / requiredFields.length) * 100);
+  },
+
+  /**
+   * Get missing KYC fields
+   * @param {object} kycData - KYC data object
+   * @returns {array} Array of missing field names
+   */
+  getMissingFields: (kycData) => {
+    if (!kycData) return [];
+
+    const requiredFields = [
+      'firstName',
+      'lastName',
+      'dateOfBirth',
+      'nationality',
+      'passportNumber',
+      'passportIssuePlace',
+      'passportIssueDate',
+      'passportExpiryDate',
+      'visaType',
+      'visaIssueDate',
+      'visaExpiryDate',
+      'expectedExitDate',
+      'sourceOfFunds',
+      'estimatedAmountToConvert',
+      'monthlyIncomeRange',
+      'passportPhotoPage',
+      'visaPage',
+      'selfie',
+      'proofOfAddress'
+    ];
+
+    return requiredFields.filter(field => 
+      !kycData[field] || kycData[field] === ''
+    );
   }
 };
 
@@ -329,7 +432,7 @@ export const fileUtils = {
    * @param {array} allowedTypes - Array of allowed MIME types
    * @returns {boolean} True if valid
    */
-  isValidFileType: (file, allowedTypes) => {
+  isValidFileType: (file, allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf']) => {
     return allowedTypes.includes(file.type);
   },
 
@@ -351,6 +454,41 @@ export const fileUtils = {
    */
   getFileExtension: (filename) => {
     return filename.slice(((filename.lastIndexOf('.') - 1) >>> 0) + 2);
+  },
+
+  /**
+   * Validate document file
+   * @param {File} file - File to validate
+   * @param {string} type - Document type ('image' or 'document')
+   * @returns {object} Validation result
+   */
+  validateDocumentFile: (file, type = 'image') => {
+    const result = {
+      isValid: false,
+      errors: []
+    };
+
+    if (!file) {
+      result.errors.push('File is required');
+      return result;
+    }
+
+    // Size validation
+    if (!fileUtils.isValidFileSize(file, 5)) {
+      result.errors.push('File size must be less than 5MB');
+    }
+
+    // Type validation
+    const imageTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+    const documentTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+    const allowedTypes = type === 'document' ? documentTypes : imageTypes;
+
+    if (!fileUtils.isValidFileType(file, allowedTypes)) {
+      result.errors.push(`Invalid file type. Allowed: ${allowedTypes.join(', ')}`);
+    }
+
+    result.isValid = result.errors.length === 0;
+    return result;
   }
 };
 
@@ -363,6 +501,7 @@ export const financialUtils = {
    * @returns {string} Formatted currency string
    */
   formatCurrency: (amount, currency = 'USD') => {
+    if (isNaN(amount)) return 'N/A';
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: currency,
@@ -375,6 +514,7 @@ export const financialUtils = {
    * @returns {string} Formatted number string
    */
   formatNumber: (number) => {
+    if (isNaN(number)) return 'N/A';
     return new Intl.NumberFormat('en-US').format(number);
   },
 
@@ -385,7 +525,38 @@ export const financialUtils = {
    * @returns {number} Converted amount
    */
   convertCurrency: (amount, rate) => {
+    if (isNaN(amount) || isNaN(rate)) return 0;
     return amount * rate;
+  },
+
+  /**
+   * Get currency symbols
+   * @returns {object} Currency symbol mappings
+   */
+  getCurrencySymbols: () => {
+    return {
+      USD: '$',
+      EUR: '€',
+      GBP: '£',
+      JPY: '¥',
+      NPR: 'Rs.',
+      INR: '₹',
+      CNY: '¥',
+      AUD: 'A$',
+      CAD: 'C$'
+    };
+  },
+
+  /**
+   * Format amount with currency symbol
+   * @param {number} amount - Amount to format
+   * @param {string} currency - Currency code
+   * @returns {string} Formatted amount with symbol
+   */
+  formatAmountWithSymbol: (amount, currency = 'USD') => {
+    const symbols = financialUtils.getCurrencySymbols();
+    const symbol = symbols[currency] || currency;
+    return `${symbol}${financialUtils.formatNumber(amount)}`;
   }
 };
 
@@ -435,8 +606,25 @@ export const storageUtils = {
    * Clear all app-related storage
    */
   clearAppStorage: () => {
-    const keysToRemove = ['token', 'user', 'rememberMe', 'kycData'];
+    const keysToRemove = ['token', 'user', 'rememberMe', 'kycData', 'preferences'];
     keysToRemove.forEach(key => localStorage.removeItem(key));
+  },
+
+  /**
+   * Save user preferences
+   * @param {object} preferences - User preferences object
+   */
+  savePreferences: (preferences) => {
+    localStorage.setItem('preferences', JSON.stringify(preferences));
+  },
+
+  /**
+   * Get user preferences
+   * @returns {object} User preferences
+   */
+  getPreferences: () => {
+    const prefs = localStorage.getItem('preferences');
+    return prefs ? JSON.parse(prefs) : {};
   }
 };
 
@@ -476,5 +664,140 @@ export const errorUtils = {
       503: 'Service temporarily unavailable.',
     };
     return messages[statusCode] || 'An error occurred. Please try again.';
+  },
+
+  /**
+   * Log error with context
+   * @param {Error} error - Error object
+   * @param {string} context - Error context
+   */
+  logError: (error, context = '') => {
+    const timestamp = dateUtils.getCurrentUTC();
+    console.error(`[${timestamp}] ${context}:`, error);
+  }
+};
+
+// Device and browser utilities
+export const deviceUtils = {
+  /**
+   * Check if device is mobile
+   * @returns {boolean} True if mobile
+   */
+  isMobile: () => {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      navigator.userAgent
+    );
+  },
+
+  /**
+   * Get device type
+   * @returns {string} Device type
+   */
+  getDeviceType: () => {
+    const ua = navigator.userAgent;
+    if (/tablet|ipad|playbook|silk/i.test(ua)) return 'tablet';
+    if (/mobile|iphone|ipod|android|blackberry|opera|mini|windows\sce|palm|smartphone|iemobile/i.test(ua)) return 'mobile';
+    return 'desktop';
+  },
+
+  /**
+   * Get browser name
+   * @returns {string} Browser name
+   */
+  getBrowserName: () => {
+    const ua = navigator.userAgent;
+    if (ua.includes('Firefox')) return 'Firefox';
+    if (ua.includes('Chrome')) return 'Chrome';
+    if (ua.includes('Safari')) return 'Safari';
+    if (ua.includes('Edge')) return 'Edge';
+    if (ua.includes('Opera')) return 'Opera';
+    return 'Unknown';
+  },
+
+  /**
+   * Get screen dimensions
+   * @returns {object} Screen width and height
+   */
+  getScreenDimensions: () => {
+    return {
+      width: window.screen.width,
+      height: window.screen.height,
+      availWidth: window.screen.availWidth,
+      availHeight: window.screen.availHeight
+    };
+  }
+};
+
+// Notification utilities
+export const notificationUtils = {
+  /**
+   * Show browser notification
+   * @param {string} title - Notification title
+   * @param {string} body - Notification body
+   * @param {string} icon - Notification icon URL
+   */
+  showNotification: (title, body, icon = null) => {
+    if (!("Notification" in window)) {
+      console.log("This browser does not support notifications");
+      return;
+    }
+
+    if (Notification.permission === "granted") {
+      new Notification(title, { body, icon });
+    } else if (Notification.permission !== "denied") {
+      Notification.requestPermission().then(permission => {
+        if (permission === "granted") {
+          new Notification(title, { body, icon });
+        }
+      });
+    }
+  },
+
+  /**
+   * Request notification permission
+   * @returns {Promise} Permission result
+   */
+  requestPermission: () => {
+    if (!("Notification" in window)) {
+      return Promise.reject("Notifications not supported");
+    }
+    return Notification.requestPermission();
+  }
+};
+
+// System info utilities
+export const systemUtils = {
+  /**
+   * Get system information
+   * @returns {object} System information
+   */
+  getSystemInfo: () => {
+    return {
+      userAgent: navigator.userAgent,
+      platform: navigator.platform,
+      language: navigator.language,
+      cookieEnabled: navigator.cookieEnabled,
+      onLine: navigator.onLine,
+      deviceType: deviceUtils.getDeviceType(),
+      browser: deviceUtils.getBrowserName(),
+      screen: deviceUtils.getScreenDimensions(),
+      timestamp: dateUtils.getCurrentUTC(),
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+    };
+  },
+
+  /**
+   * Check if localStorage is available
+   * @returns {boolean} True if available
+   */
+  isLocalStorageAvailable: () => {
+    try {
+      const test = 'test';
+      localStorage.setItem(test, test);
+      localStorage.removeItem(test);
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 };

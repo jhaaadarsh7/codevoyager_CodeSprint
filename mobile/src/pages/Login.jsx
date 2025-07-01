@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useUser } from "../contexts/UserContext";
+import { validationUtils, errorUtils } from "../contexts/UserContextUtils";
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -12,6 +14,7 @@ export default function Login() {
   });
   
   const navigate = useNavigate();
+  const { login } = useUser();
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -19,52 +22,51 @@ export default function Login() {
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
-    // Clear error when user starts typing
     if (error) setError("");
+  };
+
+  const validateForm = () => {
+    if (!formData.email) {
+      setError("Email is required");
+      return false;
+    }
+    
+    if (!validationUtils.isValidEmail(formData.email)) {
+      setError("Please enter a valid email address");
+      return false;
+    }
+    
+    if (!formData.password) {
+      setError("Password is required");
+      return false;
+    }
+    
+    return true;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!validateForm()) return;
+    
     setLoading(true);
     setError("");
 
     try {
-      const response = await fetch("http://localhost:8000/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-        }),
+      await login({
+        email: formData.email,
+        password: formData.password,
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Login failed");
-      }
-
-      // Store token and user data
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
-
-      // Optional: Handle remember me functionality
       if (formData.rememberMe) {
         localStorage.setItem("rememberMe", "true");
-      } else {
-        localStorage.removeItem("rememberMe");
       }
 
-      console.log("Login successful:", data);
-      
-      // Redirect to dashboard or home page
-      navigate("/dashboard"); // Adjust route as needed
+      navigate("/dashboard");
       
     } catch (err) {
-      console.error("Login error:", err);
-      setError(err.message || "An error occurred during login");
+      errorUtils.logError(err, "Login");
+      setError(errorUtils.parseApiError(err));
     } finally {
       setLoading(false);
     }

@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useUser } from "../contexts/UserContext";
+import { validationUtils, fileUtils, errorUtils, dateUtils } from "../contexts/UserContextUtils";
 
 // Stepper Component
 function Stepper({ currentStep, totalSteps }) {
@@ -155,6 +157,12 @@ function Step1({ formData, onChange, errors }) {
             <option value="Canada">Canada</option>
             <option value="Japan">Japan</option>
             <option value="South Korea">South Korea</option>
+            <option value="Germany">Germany</option>
+            <option value="France">France</option>
+            <option value="Italy">Italy</option>
+            <option value="Spain">Spain</option>
+            <option value="Netherlands">Netherlands</option>
+            <option value="Switzerland">Switzerland</option>
           </select>
           <span className="absolute right-3 top-2.5 text-gray-400 pointer-events-none">
             <svg width="20" height="20" fill="none">
@@ -309,6 +317,8 @@ function Step3({ formData, onChange, errors }) {
             <option value="Student">Student</option>
             <option value="Work">Work</option>
             <option value="Transit">Transit</option>
+            <option value="Diplomatic">Diplomatic</option>
+            <option value="Official">Official</option>
           </select>
           <span className="absolute right-3 top-2.5 text-gray-400 pointer-events-none">
             <svg width="20" height="20" fill="none">
@@ -410,7 +420,8 @@ function Step4({ formData, onChange, errors }) {
       <div className="flex items-center space-x-2 mb-3 mt-2">
         <svg width="22" height="22" fill="none">
           <rect x="4" y="4" width="14" height="10" rx="2" fill="#333" />
-          <rect x="8" y="2" width="6" height="4" rx="2" fill="#333" />
+          <circle cx="11" cy="9" r="3" fill="white" />
+          <path d="M11 7v4M9 9h4" stroke="#333" strokeWidth="1" />
         </svg>
         <span className="font-bold text-gray-800 text-base">Financial Information</span>
       </div>
@@ -436,6 +447,8 @@ function Step4({ formData, onChange, errors }) {
             <option value="Business">Business</option>
             <option value="Savings">Savings</option>
             <option value="Investment">Investment</option>
+            <option value="Family Support">Family Support</option>
+            <option value="Government Benefits">Government Benefits</option>
             <option value="Other">Other</option>
           </select>
           <span className="absolute right-3 top-2.5 text-gray-400 pointer-events-none">
@@ -455,7 +468,7 @@ function Step4({ formData, onChange, errors }) {
 
       <div className="mb-2">
         <label className="block text-sm text-gray-700 mb-1 font-medium">
-          Estimated Amount to Convert <span className="text-red-500">*</span>
+          Estimated Amount to Convert (USD) <span className="text-red-500">*</span>
         </label>
         <input
           type="number"
@@ -490,11 +503,12 @@ function Step4({ formData, onChange, errors }) {
             <option value="" disabled>
               Select Range
             </option>
-            <option value="Below $1000">Below $1000</option>
-            <option value="$1000-$3000">$1000-$3000</option>
-            <option value="$3000-$5000">$3000-$5000</option>
-            <option value="$5000-$10000">$5000-$10000</option>
-            <option value="Above $10000">Above $10000</option>
+            <option value="Below $1000">Below $1,000</option>
+            <option value="$1000-$3000">$1,000 - $3,000</option>
+            <option value="$3000-$5000">$3,000 - $5,000</option>
+            <option value="$5000-$10000">$5,000 - $10,000</option>
+            <option value="$10000-$25000">$10,000 - $25,000</option>
+            <option value="Above $25000">Above $25,000</option>
           </select>
           <span className="absolute right-3 top-2.5 text-gray-400 pointer-events-none">
             <svg width="20" height="20" fill="none">
@@ -519,9 +533,10 @@ function Step5({ formData, onChange, errors, onFileChange }) {
   const handleFileSelect = (fieldName, event) => {
     const file = event.target.files[0];
     if (file) {
-      // Validate file size (5MB max)
-      if (file.size > 5 * 1024 * 1024) {
-        alert("File size must be less than 5MB");
+      const validation = fileUtils.validateDocumentFile(file, fieldName === 'proofOfAddress' ? 'document' : 'image');
+      if (!validation.isValid) {
+        alert(validation.errors.join('\n'));
+        event.target.value = ''; // Clear the input
         return;
       }
       onFileChange(fieldName, file);
@@ -533,17 +548,19 @@ function Step5({ formData, onChange, errors, onFileChange }) {
       <label className="block text-sm text-gray-700 mb-2 font-medium">
         {label} {required && <span className="text-red-500">*</span>}
       </label>
-      <div className={`border-2 border-dashed rounded-lg p-6 text-center bg-gray-50 ${
-        errors[fieldName] ? "border-red-300" : "border-gray-300"
+      <div className={`border-2 border-dashed rounded-lg p-6 text-center bg-gray-50 transition-colors ${
+        errors[fieldName] ? "border-red-300 bg-red-50" : "border-gray-300 hover:border-blue-300"
       }`}>
         <svg className="mx-auto h-12 w-12 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
         </svg>
         <p className="text-sm text-gray-600 mb-2">{description}</p>
         {formData[fieldName] && (
-          <p className="text-xs text-green-600 mb-2">
-            ✓ {formData[fieldName].name}
-          </p>
+          <div className="text-xs text-green-600 mb-2 p-2 bg-green-50 rounded border">
+            <p className="font-medium">✓ {formData[fieldName].name}</p>
+            <p>Size: {fileUtils.formatFileSize(formData[fieldName].size)}</p>
+            <p>Type: {formData[fieldName].type}</p>
+          </div>
         )}
         <input 
           type="file" 
@@ -554,7 +571,7 @@ function Step5({ formData, onChange, errors, onFileChange }) {
         />
         <label 
           htmlFor={fieldName}
-          className="text-blue-600 text-sm hover:underline cursor-pointer"
+          className="inline-block bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700 cursor-pointer transition-colors"
         >
           {formData[fieldName] ? "Change File" : "Choose File"}
         </label>
@@ -576,36 +593,63 @@ function Step5({ formData, onChange, errors, onFileChange }) {
       <FileUploadBox
         fieldName="passportPhotoPage"
         label="Passport Photo Page"
-        description="Clear photo of passport information page"
+        description="Clear photo of passport information page with your photo and details"
+        accept="image/jpeg,image/png,image/jpg"
       />
 
       <FileUploadBox
         fieldName="visaPage"
         label="Visa Page"
-        description="Clear photo of signed visa"
+        description="Clear photo of the visa page from your passport"
+        accept="image/jpeg,image/png,image/jpg"
       />
 
       <FileUploadBox
         fieldName="selfie"
         label="Current Selfie"
-        description="Recent clear selfie for verification"
+        description="Recent clear selfie for identity verification"
+        accept="image/jpeg,image/png,image/jpg"
       />
 
       <FileUploadBox
         fieldName="proofOfAddress"
         label="Proof of Address"
-        description="Utility bill, bank statement or official document"
-        accept="image/*,.pdf"
+        description="Utility bill, bank statement, or official document showing your address"
+        accept="image/jpeg,image/png,image/jpg,application/pdf"
       />
 
-      <div className="bg-blue-50 rounded-lg p-3 mb-4">
-        <h4 className="font-medium text-blue-900 mb-2">Document Requirements:</h4>
-        <ul className="text-xs text-blue-800 space-y-1">
-          <li>• All documents must be clear and readable</li>
-          <li>• No screenshots or photocopies (scan or photo only)</li>
-          <li>• Documents should be recent (within 3 months for financial documents)</li>
-          <li>• File size should not exceed 5MB each</li>
-          <li>• Supported formats: JPEG, PNG, PDF for proof of address</li>
+      <div className="bg-blue-50 rounded-lg p-4 mb-4 border border-blue-200">
+        <h4 className="font-medium text-blue-900 mb-3 flex items-center">
+          <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+          </svg>
+          Document Requirements:
+        </h4>
+        <ul className="text-xs text-blue-800 space-y-1.5">
+          <li className="flex items-start">
+            <span className="text-blue-600 mr-2">•</span>
+            All documents must be clear, readable, and in color
+          </li>
+          <li className="flex items-start">
+            <span className="text-blue-600 mr-2">•</span>
+            No screenshots, photocopies, or edited images accepted
+          </li>
+          <li className="flex items-start">
+            <span className="text-blue-600 mr-2">•</span>
+            Documents should be recent (within 3 months for financial documents)
+          </li>
+          <li className="flex items-start">
+            <span className="text-blue-600 mr-2">•</span>
+            File size must not exceed 5MB per document
+          </li>
+          <li className="flex items-start">
+            <span className="text-blue-600 mr-2">•</span>
+            Supported formats: JPEG, PNG for images; PDF for proof of address
+          </li>
+          <li className="flex items-start">
+            <span className="text-blue-600 mr-2">•</span>
+            Ensure all text and details are clearly visible
+          </li>
         </ul>
       </div>
     </div>
@@ -620,6 +664,7 @@ export default function KycMultiStep() {
   const [errors, setErrors] = useState({});
   const totalSteps = 5;
   const navigate = useNavigate();
+  const { apiCall } = useUser();
 
   const [currentTime, setCurrentTime] = useState(() =>
     new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
@@ -699,21 +744,54 @@ export default function KycMultiStep() {
     switch (stepNumber) {
       case 1:
         if (!form.firstName.trim()) newErrors.firstName = "First name is required";
+        else if (!validationUtils.isValidName(form.firstName)) newErrors.firstName = "Invalid first name (letters and spaces only)";
+        
         if (!form.lastName.trim()) newErrors.lastName = "Last name is required";
+        else if (!validationUtils.isValidName(form.lastName)) newErrors.lastName = "Invalid last name (letters and spaces only)";
+        
         if (!form.dateOfBirth) newErrors.dateOfBirth = "Date of birth is required";
+        else {
+          const birthDate = new Date(form.dateOfBirth);
+          const today = new Date();
+          const age = today.getFullYear() - birthDate.getFullYear();
+          const monthDiff = today.getMonth() - birthDate.getMonth();
+          
+          if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+            age;
+          }
+          
+          if (age < 18) newErrors.dateOfBirth = "Must be at least 18 years old";
+          if (age > 100) newErrors.dateOfBirth = "Invalid date of birth";
+          if (birthDate > today) newErrors.dateOfBirth = "Date of birth cannot be in the future";
+        }
+        
         if (!form.nationality) newErrors.nationality = "Nationality is required";
         break;
 
       case 2:
         if (!form.passportNumber.trim()) newErrors.passportNumber = "Passport number is required";
+        else if (!validationUtils.isValidPassport(form.passportNumber)) {
+          newErrors.passportNumber = "Invalid passport number format (6-9 alphanumeric characters)";
+        }
+        
         if (!form.passportIssuePlace.trim()) newErrors.passportIssuePlace = "Place of issue is required";
         if (!form.passportIssueDate) newErrors.passportIssueDate = "Issue date is required";
         if (!form.passportExpiryDate) newErrors.passportExpiryDate = "Expiry date is required";
         
         // Validate dates
         if (form.passportIssueDate && form.passportExpiryDate) {
-          if (new Date(form.passportIssueDate) >= new Date(form.passportExpiryDate)) {
+          const issueDate = new Date(form.passportIssueDate);
+          const expiryDate = new Date(form.passportExpiryDate);
+          const today = new Date();
+          
+          if (issueDate >= expiryDate) {
             newErrors.passportExpiryDate = "Expiry date must be after issue date";
+          }
+          if (expiryDate <= today) {
+            newErrors.passportExpiryDate = "Passport has expired";
+          }
+          if (issueDate > today) {
+            newErrors.passportIssueDate = "Issue date cannot be in the future";
           }
         }
         break;
@@ -726,8 +804,31 @@ export default function KycMultiStep() {
         
         // Validate dates
         if (form.visaIssueDate && form.visaExpiryDate) {
-          if (new Date(form.visaIssueDate) >= new Date(form.visaExpiryDate)) {
+          const issueDate = new Date(form.visaIssueDate);
+          const expiryDate = new Date(form.visaExpiryDate);
+          const today = new Date();
+          
+          if (issueDate >= expiryDate) {
             newErrors.visaExpiryDate = "Visa expiry date must be after issue date";
+          }
+          if (expiryDate <= today) {
+            newErrors.visaExpiryDate = "Visa has expired";
+          }
+          if (issueDate > today) {
+            newErrors.visaIssueDate = "Issue date cannot be in the future";
+          }
+        }
+        
+        if (form.expectedExitDate && form.visaExpiryDate) {
+          const exitDate = new Date(form.expectedExitDate);
+          const visaExpiry = new Date(form.visaExpiryDate);
+          const today = new Date();
+          
+          if (exitDate > visaExpiry) {
+            newErrors.expectedExitDate = "Exit date cannot be after visa expiry";
+          }
+          if (exitDate < today) {
+            newErrors.expectedExitDate = "Exit date cannot be in the past";
           }
         }
         break;
@@ -735,12 +836,15 @@ export default function KycMultiStep() {
       case 4:
         if (!form.sourceOfFunds) newErrors.sourceOfFunds = "Source of funds is required";
         if (!form.estimatedAmountToConvert) newErrors.estimatedAmountToConvert = "Estimated amount is required";
-        if (!form.monthlyIncomeRange) newErrors.monthlyIncomeRange = "Monthly income range is required";
-        
-        // Validate amount
-        if (form.estimatedAmountToConvert && form.estimatedAmountToConvert <= 0) {
-          newErrors.estimatedAmountToConvert = "Amount must be greater than 0";
+        else {
+          const amount = parseFloat(form.estimatedAmountToConvert);
+          if (isNaN(amount) || amount <= 0) {
+            newErrors.estimatedAmountToConvert = "Amount must be a positive number";
+          } else if (amount > 1000000) {
+            newErrors.estimatedAmountToConvert = "Amount seems too large, please verify";
+          }
         }
+        if (!form.monthlyIncomeRange) newErrors.monthlyIncomeRange = "Monthly income range is required";
         break;
 
       case 5:
@@ -816,7 +920,7 @@ export default function KycMultiStep() {
         throw new Error("Authentication token not found. Please login again.");
       }
 
-      const response = await fetch("http://localhost:000/api/kyc/submit", {
+      const response = await fetch("http://localhost:5000/api/kyc/submit", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -830,18 +934,18 @@ export default function KycMultiStep() {
         throw new Error(data.message || "KYC submission failed");
       }
 
-      setSuccess("KYC submitted successfully! Your application is under review.");
+      setSuccess("🎉 KYC submitted successfully! Your application is under review and you will be notified once it's processed.");
       
       console.log("KYC submitted successfully:", data);
       
       // Redirect to dashboard after a short delay
       setTimeout(() => {
         navigate("/dashboard");
-      }, 3000);
+      }, 4000);
 
     } catch (err) {
-      console.error("KYC submission error:", err);
-      setError(err.message || "An error occurred during KYC submission");
+      errorUtils.logError(err, "KYC Submission");
+      setError(errorUtils.parseApiError(err));
     } finally {
       setLoading(false);
     }
@@ -871,6 +975,9 @@ export default function KycMultiStep() {
               <br />
               currency to NPR
             </p>
+            <div className="mt-2 text-white text-xs opacity-75">
+              Step {step} of {totalSteps}
+            </div>
           </div>
           {/* SVG Curve */}
           <svg
@@ -893,13 +1000,23 @@ export default function KycMultiStep() {
           {/* Error/Success Messages */}
           {error && (
             <div className="mx-6 mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-md">
-              {error}
+              <div className="flex items-center">
+                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+                {error}
+              </div>
             </div>
           )}
 
           {success && (
             <div className="mx-6 mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded-md">
-              {success}
+              <div className="flex items-center">
+                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                {success}
+              </div>
             </div>
           )}
 
@@ -916,17 +1033,17 @@ export default function KycMultiStep() {
           <div className="flex justify-between gap-2 px-6 pb-6">
             <button
               type="button"
-              className={`flex-1 bg-gray-200 text-gray-600 rounded-full py-2 font-semibold shadow transition-all ${
-                step === 1 || loading ? "opacity-50 cursor-not-allowed" : ""
+              className={`flex-1 rounded-full py-3 font-semibold shadow transition-all ${
+                step === 1 || loading ? "bg-gray-200 text-gray-400 cursor-not-allowed" : "bg-gray-200 text-gray-600 hover:bg-gray-300"
               }`}
               onClick={handlePrev}
               disabled={step === 1 || loading}
             >
-              Previous
+              ← Previous
             </button>
             <button
               type="button"
-              className={`flex-1 rounded-full py-2 font-semibold shadow-md transition-all ${
+              className={`flex-1 rounded-full py-3 font-semibold shadow-md transition-all ${
                 loading
                   ? "bg-gray-400 text-gray-200 cursor-not-allowed"
                   : "bg-[#2563eb] text-white hover:bg-blue-700"
@@ -943,7 +1060,7 @@ export default function KycMultiStep() {
                   {step === totalSteps ? "Submitting..." : "Processing..."}
                 </div>
               ) : (
-                step === totalSteps ? "Submit KYC" : "Next Step"
+                step === totalSteps ? "Submit KYC →" : "Next →"
               )}
             </button>
           </div>

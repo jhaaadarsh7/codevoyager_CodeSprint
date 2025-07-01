@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useUser } from "../contexts/UserContext";
+import { validationUtils, errorUtils } from "../contexts/UserContextUtils";
 
 export default function Signup() {
   const [showPassword, setShowPassword] = useState(false);
@@ -19,6 +21,7 @@ export default function Signup() {
   );
 
   const navigate = useNavigate();
+  const { signup } = useUser();
 
   React.useEffect(() => {
     const interval = setInterval(() => {
@@ -38,87 +41,73 @@ export default function Signup() {
     if (success) setSuccess("");
   };
 
-  const validatePassword = (password) => {
-    const minLength = 8;
-    const hasUpperCase = /[A-Z]/.test(password);
-    const hasLowerCase = /[a-z]/.test(password);
-    const hasNumbers = /\d/.test(password);
-    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+  const validateForm = () => {
+    if (!formData.fullName.trim()) {
+      setError("Full name is required");
+      return false;
+    }
 
-    if (password.length < minLength) {
-      return "Password must be at least 8 characters long";
+    if (!validationUtils.isValidName(formData.fullName)) {
+      setError("Please enter a valid full name (letters and spaces only)");
+      return false;
     }
-    if (!hasUpperCase) {
-      return "Password must contain at least one uppercase letter";
+
+    if (!formData.email) {
+      setError("Email is required");
+      return false;
     }
-    if (!hasLowerCase) {
-      return "Password must contain at least one lowercase letter";
+
+    if (!validationUtils.isValidEmail(formData.email)) {
+      setError("Please enter a valid email address");
+      return false;
     }
-    if (!hasNumbers) {
-      return "Password must contain at least one number";
+
+    if (!formData.password) {
+      setError("Password is required");
+      return false;
     }
-    if (!hasSpecial) {
-      return "Password must contain at least one special character";
+
+    const passwordValidation = validationUtils.validatePassword(formData.password);
+    if (!passwordValidation.isValid) {
+      setError(passwordValidation.feedback[0]);
+      return false;
     }
-    return null;
+
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords don't match!");
+      return false;
+    }
+
+    return true;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!validateForm()) return;
+    
     setLoading(true);
     setError("");
     setSuccess("");
 
-    // Validation
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords don't match!");
-      setLoading(false);
-      return;
-    }
-
-    const passwordError = validatePassword(formData.password);
-    if (passwordError) {
-      setError(passwordError);
-      setLoading(false);
-      return;
-    }
-
     try {
-      const response = await fetch("http://localhost:8000/api/auth/signup", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          Fullname: formData.fullName, // Note: Backend expects 'Fullname'
-          email: formData.email,
-          password: formData.password,
-          role: formData.role,
-        }),
+      await signup({
+        Fullname: formData.fullName, // Note: Backend expects 'Fullname'
+        email: formData.email,
+        password: formData.password,
+        role: formData.role,
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Signup failed");
-      }
-
-      // Store token and user data
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
 
       setSuccess("Account created successfully! Redirecting...");
       
-      console.log("Signup successful:", data);
-      
-      // Redirect to dashboard or KYC page after a short delay
+      // Redirect to dashboard after a short delay
       setTimeout(() => {
-        navigate("/dashboard"); // or "/kyc" if you want users to complete KYC first
+        navigate("/dashboard");
       }, 2000);
       
     } catch (err) {
-      console.error("Signup error:", err);
-      setError(err.message || "An error occurred during signup");
+      errorUtils.logError(err, "Signup");
+      setError(errorUtils.parseApiError(err));
     } finally {
       setLoading(false);
     }
