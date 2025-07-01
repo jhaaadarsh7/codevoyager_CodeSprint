@@ -152,7 +152,7 @@ export default function EnhancedFinancialDashboard() {
       color: "bg-blue-50 hover:bg-blue-100",
       textColor: "text-blue-700",
       iconColor: "text-blue-600",
-      action: () => alert("🏨 Hotels: Partner with 500+ hotels across Nepal. Book with special tourist rates!")
+    action: () => navigate("/hotels") // Navigate to hotel booking
     },
     {
       id: 2,

@@ -3,9 +3,9 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import KycMultiStep from './pages/KYCVerification';
 import KycCompleted from './pages/KYCCompleted';
-import Dashboard from './pages/Dashboard';
 import ErrorBoundary from './components/ErrorBoundary';
 import EnhancedFinancialDashboard from './components/EnhancedFinancialDashboard';
+import HotelBooking from './pages/HotelBooking';
 
 function App() {
 
@@ -19,7 +19,8 @@ function App() {
       <Route path='/kycverification' element={<KycMultiStep/>}/>
       <Route path='/kyccompleted' element={<KycCompleted/>}/>
       <Route path='/dashboard' element={<EnhancedFinancialDashboard/>}/>
-      
+            <Route path='/hotels' element={<HotelBooking/>}/>
+
    </Routes>
     </ErrorBoundary>
   )
