@@ -1,12 +1,17 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [formData, setFormData] = useState({
     email: "",
     password: "",
     rememberMe: false,
   });
+  
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -14,12 +19,55 @@ export default function Login() {
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
+    // Clear error when user starts typing
+    if (error) setError("");
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Login submitted:", formData);
-    // Handle login logic here
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch("http://localhost:8000/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Login failed");
+      }
+
+      // Store token and user data
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      // Optional: Handle remember me functionality
+      if (formData.rememberMe) {
+        localStorage.setItem("rememberMe", "true");
+      } else {
+        localStorage.removeItem("rememberMe");
+      }
+
+      console.log("Login successful:", data);
+      
+      // Redirect to dashboard or home page
+      navigate("/dashboard"); // Adjust route as needed
+      
+    } catch (err) {
+      console.error("Login error:", err);
+      setError(err.message || "An error occurred during login");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -30,7 +78,9 @@ export default function Login() {
           {/* Top bar (time, signal, battery) */}
           <div className="absolute top-2 left-0 w-full flex justify-between items-center px-4 text-xs text-black">
             <div className="flex items-center">
-              <div className="bg-blue-500 text-white rounded-lg px-2 py-0.5 font-bold">9:41</div>
+              <div className="bg-blue-500 text-white rounded-lg px-2 py-0.5 font-bold">
+                {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </div>
             </div>
             <div className="flex gap-2 items-center">
               <svg width="20" height="14" fill="none">
@@ -68,7 +118,7 @@ export default function Login() {
         <br /> <br /> 
 
         {/* Content area - scrollable */}
-        <div className="flex-1  overflow-y-auto">
+        <div className="flex-1 overflow-y-auto">
           {/* Login Form */}
           <div className="px-6 pt-2 pb-4">
             {/* Centered Section Header */}
@@ -79,6 +129,13 @@ export default function Login() {
               </svg>
               <span className="font-bold text-gray-800 text-base">Account Login</span>
             </div>
+
+            {/* Error Message */}
+            {error && (
+              <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-md">
+                {error}
+              </div>
+            )}
 
             <form onSubmit={handleSubmit}>
               <div className="mb-2">
@@ -94,6 +151,7 @@ export default function Login() {
                     className="w-full px-3 py-2 rounded-md border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb]"
                     placeholder="Enter your email"
                     required
+                    disabled={loading}
                   />
                   <span className="absolute right-3 top-2.5 text-gray-400">
                     <svg width="20" height="20" fill="none">
@@ -106,7 +164,6 @@ export default function Login() {
                 </div>
               </div>
               
-
               <div className="mb-2">
                 <label className="block text-sm text-gray-700 mb-1 font-medium">
                   Password <span className="text-red-500">*</span>
@@ -120,11 +177,13 @@ export default function Login() {
                     className="w-full px-3 py-2 rounded-md border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb] pr-10"
                     placeholder="Enter your password"
                     required
+                    disabled={loading}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                    disabled={loading}
                   >
                     {showPassword ? (
                       <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
@@ -167,6 +226,7 @@ export default function Login() {
                     checked={formData.rememberMe}
                     onChange={handleChange}
                     className="w-4 h-4 text-[#2563eb] bg-gray-100 border-gray-300 rounded focus:ring-[#2563eb] focus:ring-2"
+                    disabled={loading}
                   />
                   <label htmlFor="rememberMe" className="text-sm text-gray-700">
                     Remember me
@@ -179,12 +239,27 @@ export default function Login() {
 
               <button
                 type="submit"
-                className="w-full bg-[#2563eb] text-white rounded-full py-2 font-semibold shadow-md hover:bg-blue-700 transition-all mb-4"
+                disabled={loading}
+                className={`w-full rounded-full py-2 font-semibold shadow-md transition-all mb-4 ${
+                  loading
+                    ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                    : "bg-[#2563eb] text-white hover:bg-blue-700"
+                }`}
               >
-                Sign In
+                {loading ? (
+                  <div className="flex items-center justify-center">
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Signing In...
+                  </div>
+                ) : (
+                  "Sign In"
+                )}
               </button>
 
-<br />
+              <br />
               <div className="flex items-center my-4">
                 <div className="flex-grow h-px bg-gray-300"></div>
                 <span className="mx-3 text-gray-400 text-sm">or</span>

@@ -1,14 +1,31 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function Signup() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
     password: "",
     confirmPassword: "",
+    role: "user", // Default role
   });
+  const [currentTime, setCurrentTime] = useState(() =>
+    new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  );
+
+  const navigate = useNavigate();
+
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -16,27 +33,106 @@ export default function Signup() {
       ...prev,
       [name]: value,
     }));
+    // Clear error when user starts typing
+    if (error) setError("");
+    if (success) setSuccess("");
   };
 
-  const handleSubmit = (e) => {
+  const validatePassword = (password) => {
+    const minLength = 8;
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumbers = /\d/.test(password);
+    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+    if (password.length < minLength) {
+      return "Password must be at least 8 characters long";
+    }
+    if (!hasUpperCase) {
+      return "Password must contain at least one uppercase letter";
+    }
+    if (!hasLowerCase) {
+      return "Password must contain at least one lowercase letter";
+    }
+    if (!hasNumbers) {
+      return "Password must contain at least one number";
+    }
+    if (!hasSpecial) {
+      return "Password must contain at least one special character";
+    }
+    return null;
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setError("");
+    setSuccess("");
+
+    // Validation
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords don't match!");
+      setError("Passwords don't match!");
+      setLoading(false);
       return;
     }
-    console.log("Signup submitted:", formData);
-    // Handle signup logic here
+
+    const passwordError = validatePassword(formData.password);
+    if (passwordError) {
+      setError(passwordError);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch("http://localhost:8000/api/auth/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          Fullname: formData.fullName, // Note: Backend expects 'Fullname'
+          email: formData.email,
+          password: formData.password,
+          role: formData.role,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Signup failed");
+      }
+
+      // Store token and user data
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      setSuccess("Account created successfully! Redirecting...");
+      
+      console.log("Signup successful:", data);
+      
+      // Redirect to dashboard or KYC page after a short delay
+      setTimeout(() => {
+        navigate("/dashboard"); // or "/kyc" if you want users to complete KYC first
+      }, 2000);
+      
+    } catch (err) {
+      console.error("Signup error:", err);
+      setError(err.message || "An error occurred during signup");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-gray-200">
       <div className="w-full h-screen bg-white flex flex-col">
         {/* Top blue section with curved bottom (SVG) */}
-        <div className="relative bg-[#2563eb] h-44 flex flex-col items-center justify-center flex-shrink-0">
+        <div className="relative bg-[#2563eb] h-70 flex flex-col items-center justify-center flex-shrink-0">
           {/* Top bar (time, signal, battery) */}
           <div className="absolute top-2 left-0 w-full flex justify-between items-center px-4 text-xs text-black">
             <div className="flex items-center">
-              <div className="bg-blue-500 text-white rounded-lg px-2 py-0.5 font-bold">9:41</div>
+              <div className="bg-blue-500 text-white rounded-lg px-2 py-0.5 font-bold">{currentTime}</div>
             </div>
             <div className="flex gap-2 items-center">
               <svg width="20" height="14" fill="none">
@@ -52,8 +148,8 @@ export default function Signup() {
           </div>
           {/* Title and Subtitle */}
           <div className="flex flex-col items-center justify-center mt-8 text-center px-4">
-            <h2 className="text-lg font-bold text-white">Create Account</h2>
-            <p className="text-white text-xs mt-1">
+            <h1 className="text-3xl font-bold text-white">Create Account</h1>
+            <p className="text-white text-sm mt-1">
               Sign up to get started
               <br />
               with your journey
@@ -85,6 +181,20 @@ export default function Signup() {
               <span className="font-bold text-gray-800 text-base">New Account</span>
             </div>
 
+            {/* Error Message */}
+            {error && (
+              <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-md">
+                {error}
+              </div>
+            )}
+
+            {/* Success Message */}
+            {success && (
+              <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded-md">
+                {success}
+              </div>
+            )}
+
             <form onSubmit={handleSubmit}>
               <div className="mb-2">
                 <label className="block text-sm text-gray-700 mb-1 font-medium">
@@ -99,6 +209,7 @@ export default function Signup() {
                     className="w-full px-3 py-2 rounded-md border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb]"
                     placeholder="Enter your full name"
                     required
+                    disabled={loading}
                   />
                   <span className="absolute right-3 top-2.5 text-gray-400">
                     <svg width="20" height="20" fill="none">
@@ -122,6 +233,7 @@ export default function Signup() {
                     className="w-full px-3 py-2 rounded-md border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb]"
                     placeholder="Enter your email"
                     required
+                    disabled={loading}
                   />
                   <span className="absolute right-3 top-2.5 text-gray-400">
                     <svg width="20" height="20" fill="none">
@@ -132,6 +244,22 @@ export default function Signup() {
                     </svg>
                   </span>
                 </div>
+              </div>
+
+              <div className="mb-2">
+                <label className="block text-sm text-gray-700 mb-1 font-medium">
+                  User Role <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="role"
+                  value={formData.role}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 rounded-md border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb]"
+                  disabled={loading}
+                >
+                  <option value="user">User</option>
+                  <option value="admin">Admin</option>
+                </select>
               </div>
 
               <div className="mb-2">
@@ -147,11 +275,13 @@ export default function Signup() {
                     className="w-full px-3 py-2 rounded-md border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb] pr-10"
                     placeholder="Create a password"
                     required
+                    disabled={loading}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                    disabled={loading}
                   >
                     {showPassword ? (
                       <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
@@ -183,6 +313,9 @@ export default function Signup() {
                     )}
                   </button>
                 </div>
+                <div className="mt-1 text-xs text-gray-500">
+                  Password must be at least 8 characters with uppercase, lowercase, number, and special character
+                </div>
               </div>
 
               <div className="mb-4">
@@ -198,11 +331,13 @@ export default function Signup() {
                     className="w-full px-3 py-2 rounded-md border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb] pr-10"
                     placeholder="Confirm your password"
                     required
+                    disabled={loading}
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                    disabled={loading}
                   >
                     {showConfirmPassword ? (
                       <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
@@ -238,9 +373,24 @@ export default function Signup() {
 
               <button
                 type="submit"
-                className="w-full bg-[#2563eb] text-white rounded-full py-2 font-semibold shadow-md hover:bg-blue-700 transition-all mb-4"
+                disabled={loading}
+                className={`w-full rounded-full py-2 font-semibold shadow-md transition-all mb-4 ${
+                  loading
+                    ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                    : "bg-[#2563eb] text-white hover:bg-blue-700"
+                }`}
               >
-                Create Account
+                {loading ? (
+                  <div className="flex items-center justify-center">
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Creating Account...
+                  </div>
+                ) : (
+                  "Create Account"
+                )}
               </button>
 
               <div className="text-center">
